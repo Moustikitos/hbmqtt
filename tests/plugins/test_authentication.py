@@ -119,6 +119,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         self.loop = asyncio.new_event_loop()
 
     def test_good_anonymous(self):
+        # allow anonymous and signature is good
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
         context.config = {
@@ -142,6 +143,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         self.assertTrue(ret)
 
     def test_bad_anonymous(self):
+        # allow anonymous and signature is not good
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
         context.config = {
@@ -165,6 +167,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         self.assertFalse(ret)
 
     def test_bad_public_key(self):
+        # do not allow anonymous and signature is good
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
         context.config = {
@@ -188,6 +191,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         self.assertFalse(ret)
 
     def test_bad_signature(self):
+        # do not allow anonymous and signature is not good
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
         context.config = {

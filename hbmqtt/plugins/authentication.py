@@ -128,7 +128,7 @@ class Secp256k1AuthPlugin(FileAuthPlugin):
                     now = datetime.datetime.utcnow()
                     iso_now = now.isoformat()[:16]
                     iso_now_m1 = (
-                        now - datetime.timedelta(1.0 / 1440)
+                        now - datetime.timedelta(1.0 / 1440)  # 1440 = 24*60
                     ).isoformat()[:16]
                     # schnorr signature is issued on :
                     # isoformat(utcnow)[:16] + client id

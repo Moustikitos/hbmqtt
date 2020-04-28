@@ -46,6 +46,7 @@ setup(
             # 'event_logger_plugin = hbmqtt.plugins.logging:EventLoggerPlugin',
             'packet_logger_plugin = hbmqtt.plugins.logging:PacketLoggerPlugin',
             'auth_anonymous = hbmqtt.plugins.authentication:AnonymousAuthPlugin',
+            'auth_secp256k1 = hbmqtt.plugins.authentication:Secp256k1AuthPlugin',
             'auth_file = hbmqtt.plugins.authentication:FileAuthPlugin',
             'topic_taboo = hbmqtt.plugins.topic_checking:TopicTabooPlugin',
             'topic_acl = hbmqtt.plugins.topic_checking:TopicAccessControlListPlugin',

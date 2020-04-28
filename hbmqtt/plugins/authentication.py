@@ -67,14 +67,13 @@ class FileAuthPlugin(BaseAuthPlugin):
                 with open(password_file) as f:
                     self.context.logger.debug("Reading user database from %s" % password_file)
                     for l in f:
-                        # line = l.strip()
                         if not l.startswith('#'):  # Allow comments in files
                             (username, pwd_hash_or_puk) = [
-                                e.strip() for e in l.split(sep=":", maxsplit=3)
-                            ]
+                                e.strip() for e in l.split(sep=":", maxsplit=3)[:2]
+                            ]  # so ' username : password ' gives same result than 'username:password'
                             if username:
                                 # in passord file a public key is set like :
-                                # secp256k1.puk:
+                                # secp256k1.puk:030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7
                                 if username == "secp256k1.puk":
                                     self._puks.append(pwd_hash_or_puk)
                                     self.context.logger.debug("secp256k1 public key %s added" % pwd_hash_or_puk)
@@ -117,18 +116,28 @@ class Secp256k1AuthPlugin(FileAuthPlugin):
             if session.username:
                 puk = session.username
                 if puk not in self._puks:
+                    # public key is not registered
                     authenticated = False
                     self.context.logger.debug("public key %s not found" % puk)
                 else:
-                    now = datetime.datetime.now()
+                    # time is used to change signature identification every
+                    # minutes. Test is performed on the curent utc minute and
+                    # the one before. Isoformat is YYYY-MM-DDTHH:MM:SS.ffffff
+                    # so isoformat() --> YYYY-MM-DDTHH:MM
+                    now = datetime.datetime.utcnow()
                     iso_now = now.isoformat()[:16]
                     iso_now_m1 = (
                         now - datetime.timedelta(1.0 / 1440)
                     ).isoformat()[:16]
-
+                    # schnorr signature is issued on :
+                    # isoformat(utcnow)[:16] + client id
                     msg = schnorr.hash_sha256(iso_now + session.client_id)
-                    msg_m1 = schnorr.hash_sha256(iso_now_m1 + session.client_id)
-
+                    msg_m1 = schnorr.hash_sha256(
+                        iso_now_m1 + session.client_id
+                    )
+                    # Schnorr protocol only uses x value of a secp256k1 point.
+                    # puk[-64:] gives hexlified x value from encoded secp256k1
+                    # point
                     puk = binascii.unhexlify(puk[-64:])
                     sig = binascii.unhexlify(session.password)
                     authenticated = any([

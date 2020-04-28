@@ -133,7 +133,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = '2c495f4933631f014d93f059c15b03bac6eaaead53a675e09574c4bcccab09d6'
         s.username = "030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7"  # the puk actually
         prk = binascii.unhexlify("2c495f4933631f014d93f059c15b03bac6eaaead53a675e09574c4bcccab09d6")
-        msg = schnorr.hash_sha256(datetime.datetime.now().isoformat()[:16] + s.client_id)
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id)
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)
@@ -155,7 +155,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = 'fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3'
         s.username = "02d3a9b4022ab24b9218ae3290d2cbecf6d773ef70769afe9f15e7055a79cc90c4"
         prk = binascii.unhexlify("fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3")
-        msg = schnorr.hash_sha256(datetime.datetime.now().isoformat()[:16] + s.client_id)
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id)
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)
@@ -177,7 +177,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = '2c495f4933631f014d93f059c15b03bac6eaaead53a675e09574c4bcccab09d6'
         s.username = "030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7"  # the puk actually
         prk = binascii.unhexlify("2c495f4933631f014d93f059c15b03bac6eaaead53a675e09574c4bcccab09d6")
-        msg = schnorr.hash_sha256(datetime.datetime.now().isoformat()[:16] + s.client_id[1:])  # remove first car of client_id to generate a bad signature
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id[1:])  # remove first car of client_id to generate a bad signature
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)

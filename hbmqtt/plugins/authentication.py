@@ -112,10 +112,11 @@ class Secp256k1AuthPlugin(FileAuthPlugin):
     def authenticate(self, *args, **kwargs):
         authenticated = super().authenticate(*args, **kwargs)
         if authenticated:
+            allow_anonymous = self.auth_config.get('allow-anonymous', True)
             session = kwargs.get('session', None)
             if session.username:
                 puk = session.username
-                if puk not in self._puks:
+                if not allow_anonymous and puk not in self._puks:
                     # public key is not registered
                     authenticated = False
                     self.context.logger.debug("public key %s not found" % puk)

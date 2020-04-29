@@ -170,6 +170,20 @@ ps/blob/bip-schnorr/bip-schnorr.mediawiki>`_ spec.
     return bytes_from_int(x(P))
 
 
+def encoded_from_point(P):
+    """
+    Encode and compress a ``secp256k1`` point:
+      * ``bytes(2) || bytes(x)`` if y is even
+      * ``bytes(3) || bytes(x)`` if y is odd
+
+    Args:
+        P (:class:`list`): ``secp256k1`` point
+    Returns:
+        :class:`bytes`: compressed and encoded point
+    """
+    return (b"\x03" if y(P) & 1 else b"\x02") + bytes_from_int(x(P))
+
+
 def sign(msg, seckey0):
     """
     Generate message signature according to `BIP schnorr <https://github.com/s\

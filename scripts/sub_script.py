@@ -7,7 +7,7 @@ hbmqtt_sub - MQTT 3.1.1 publisher
 Usage:
     hbmqtt_sub --version
     hbmqtt_sub (-h | --help)
-    hbmqtt_sub --url BROKER_URL -t TOPIC... [-n COUNT] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER]
+    hbmqtt_sub --url BROKER_URL -t TOPIC... [-n COUNT] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [--schnorr SECRET]
 
 Options:
     -h --help           Show this screen.
@@ -19,6 +19,7 @@ Options:
     -q | --qos QOS      Quality of service desired to receive messages, from 0, 1 and 2. Defaults to 0.
     -t TOPIC...         Topic filter to subcribe
     -k KEEP_ALIVE       Keep alive timeout in second
+    --schnorr SECRET    secret to use for a secp256k1 secured connection
     --clean-session     Clean session on connect (defaults to False)
     --ca-file CAFILE]   CA file
     --ca-path CAPATH]   CA Path
@@ -34,14 +35,18 @@ Options:
 import sys
 import logging
 import asyncio
+import binascii
 import os
 import json
+import datetime
+import urllib.parse as urlparse
 from hbmqtt.client import MQTTClient, ConnectException
 from hbmqtt.errors import MQTTException
 from hbmqtt.version import get_version
 from docopt import docopt
 from hbmqtt.mqtt.constants import QOS_0
 from hbmqtt.utils import read_yaml_config
+from hbmqtt.plugins import schnorr
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +148,25 @@ def main(*args, **kwargs):
         config['will']['message'] = arguments['--will-message'].encode('utf-8')
         config['will']['qos'] = int(arguments['--will-qos'])
         config['will']['retain'] = arguments['--will-retain']
+
+    if arguments['--schnorr'] is not None:
+        prk = schnorr.hash_sha256(arguments["--schnorr"])
+        msg = schnorr.hash_sha256(
+            datetime.datetime.utcnow().isoformat()[:16] + client_id
+        )
+        sig = binascii.hexlify(schnorr.sign(msg, prk))
+        parse = urlparse.urlparse(arguments["--url"])
+        puk = binascii.hexlify(
+            schnorr.encoded_from_point(
+                schnorr.G * schnorr.int.from_bytes(prk, byteorder="big")
+            )
+        )
+        arguments["--url"] = urlparse.urlunparse(
+            parse._replace(netloc="%s:%s@%s" % (
+                puk.decode("utf-8"), sig.decode("utf-8"),
+                parse.netloc.split("@")[-1]
+            ))
+        )
 
     client = MQTTClient(client_id=client_id, config=config, loop=loop)
     loop.run_until_complete(do_sub(client, arguments))

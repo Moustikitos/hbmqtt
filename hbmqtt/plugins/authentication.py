@@ -57,7 +57,6 @@ class AnonymousAuthPlugin(BaseAuthPlugin):
 class FileAuthPlugin(BaseAuthPlugin):
     def __init__(self, context):
         super().__init__(context)
-        self._puks = []  # to store allowed public keys
         self._users = dict()
         self._read_password_file()
 
@@ -68,21 +67,13 @@ class FileAuthPlugin(BaseAuthPlugin):
                 with open(password_file) as f:
                     self.context.logger.debug("Reading user database from %s" % password_file)
                     for l in f:
-                        if not l.startswith('#'):  # Allow comments in files
-                            (username, pwd_hash_or_puk) = [
-                                e.strip() for e in l.split(sep=":", maxsplit=3)[:2]
-                            ]  # so ' username : password ' gives same result than 'username:password'
+                        line = l.strip()
+                        if not line.startswith('#'):    # Allow comments in files
+                            (username, pwd_hash) = line.split(sep=":", maxsplit=3)
                             if username:
-                                # in passord file a public key is set like :
-                                # secp256k1.puk:030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7
-                                if username == "secp256k1.puk":
-                                    self._puks.append(pwd_hash_or_puk)
-                                    self.context.logger.debug("secp256k1 public key %s added" % pwd_hash_or_puk)
-                                else:
-                                    self._users[username] = pwd_hash_or_puk
-                                    self.context.logger.debug("user %s , hash=%s" % (username, pwd_hash_or_puk))
+                                self._users[username] = pwd_hash
+                                self.context.logger.debug("user %s , hash=%s" % (username, pwd_hash))
                 self.context.logger.debug("%d user(s) read from file %s" % (len(self._users), password_file))
-                self.context.logger.debug("%d secp256k1 public key granted from file %s" % (len(self._puks), password_file))
             except FileNotFoundError:
                 self.context.logger.warning("Password file %s not found" % password_file)
         else:
@@ -96,7 +87,7 @@ class FileAuthPlugin(BaseAuthPlugin):
             if session.username:
                 hash = self._users.get(session.username, None)
                 if not hash:
-                    authenticated = False
+                    authenticated = self.auth_config.get('allow-anonymous', True)
                     self.context.logger.debug("No hash found for user '%s'" % session.username)
                 else:
                     authenticated = pwd_context.verify(session.password, hash)
@@ -105,10 +96,36 @@ class FileAuthPlugin(BaseAuthPlugin):
         return authenticated
 
 
-class Secp256k1AuthPlugin(FileAuthPlugin):
+class Secp256k1AuthPlugin(BaseAuthPlugin):
     """
     This plugin allows secure identification without ssl.
     """
+    def __init__(self, context):
+        super().__init__(context)
+        self._puks = []  # to store allowed public keys
+        self._read_public_keys()
+
+    def _read_public_keys(self):
+        puk_file = self.auth_config.get('puk-file', None)
+        if puk_file:
+            try:
+                with open(puk_file) as f:
+                    self.context.logger.debug("Reading public key database from %s" % puk_file)
+                    for l in f:
+                        if not l.startswith('#'):  # Allow comments in files
+                            (username, puk) = [
+                                e.strip() for e in l.split(sep=":", maxsplit=3)[:2]
+                            ]  # so ' username : password ' gives same result than 'username:password'
+                            # in passord file a public key is set like :
+                            # secp256k1:030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7
+                            if username == "secp256k1.puk":
+                                self._puks.append(puk)
+                                self.context.logger.debug("secp256k1 public key %s added" % puk)
+                self.context.logger.debug("%d secp256k1 public key granted from file %s" % (len(self._puks), puk_file))
+            except FileNotFoundError:
+                self.context.logger.warning("Password file %s not found" % puk_file)
+        else:
+            self.context.logger.debug("Configuration parameter 'puk-file' not found")
 
     @asyncio.coroutine
     def authenticate(self, *args, **kwargs):
@@ -118,9 +135,9 @@ class Secp256k1AuthPlugin(FileAuthPlugin):
             session = kwargs.get('session', None)
             if session.username:
                 puk = session.username
-                if not allow_anonymous and puk not in self._puks:
+                if puk not in self._puks:
                     # public key is not registered
-                    authenticated = False
+                    authenticated = allow_anonymous
                     self.context.logger.debug("public key %s not found" % puk)
                 else:
                     # time is used to change signature identification every

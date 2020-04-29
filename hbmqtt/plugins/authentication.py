@@ -5,6 +5,7 @@ import logging
 import asyncio
 import binascii
 import datetime
+import traceback
 
 from passlib.apps import custom_app_context as pwd_context
 from hbmqtt.plugins import schnorr
@@ -81,6 +82,7 @@ class FileAuthPlugin(BaseAuthPlugin):
                                     self._users[username] = pwd_hash_or_puk
                                     self.context.logger.debug("user %s , hash=%s" % (username, pwd_hash_or_puk))
                 self.context.logger.debug("%d user(s) read from file %s" % (len(self._users), password_file))
+                self.context.logger.debug("%d secp256k1 public key granted from file %s" % (len(self._puks), password_file))
             except FileNotFoundError:
                 self.context.logger.warning("Password file %s not found" % password_file)
         else:
@@ -139,12 +141,21 @@ class Secp256k1AuthPlugin(FileAuthPlugin):
                     # Schnorr protocol only uses x value of a secp256k1 point.
                     # puk[-64:] gives hexlified x value from encoded secp256k1
                     # point
-                    puk = binascii.unhexlify(puk[-64:])
-                    sig = binascii.unhexlify(session.password)
-                    authenticated = any([
-                        schnorr.verify(msg, puk, sig),
-                        schnorr.verify(msg_m1, puk, sig)
-                    ])
+                    try:
+                        puk = binascii.unhexlify(puk[-64:])
+                        sig = binascii.unhexlify(session.password)
+                        authenticated = any([
+                            schnorr.verify(msg, puk, sig),
+                            schnorr.verify(msg_m1, puk, sig)
+                        ])
+                    except Exception as error:
+                        self.context.logger.error(
+                            "%r\n%s", error, traceback.format_exc()
+                        )
+                        self.context.logger.debug(
+                            "secp256k1 auth error %s", session
+                        )
+                        return None
             else:
                 return None
         return authenticated

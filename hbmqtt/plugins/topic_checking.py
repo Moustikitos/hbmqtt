@@ -48,6 +48,11 @@ class Secp256k1TopicPlugin(BaseTopicPlugin):
         if filter_result:
             session = kwargs.get('session', None)
             topic = kwargs.get('topic', None)
+            self.context.logger.info(
+                "secp256k1 topic filter on %s with %s session",
+                self.topic_config.get("secp256k1-roots", []),
+                "granted" if getattr(session, "_secp256k1", False) else "not granted"
+            )
             if any([
                 topic.startswith(root) for root in
                 self.topic_config.get("secp256k1-roots", [])

@@ -66,6 +66,7 @@ def main(*args, **kwargs):
     config = None
     if arguments['-c']:
         config = read_yaml_config(arguments['-c'])
+        logger.debug("Using configuration %s", config)
     else:
         config = read_yaml_config(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'default_broker.yaml'))
         logger.debug("Using default configuration")

@@ -148,6 +148,7 @@ class Secp256k1AuthPlugin(FileAuthPlugin):
                             schnorr.verify(msg, puk, sig),
                             schnorr.verify(msg_m1, puk, sig)
                         ])
+                        setattr(session, "_secp256k1", authenticated)
                     except Exception as error:
                         self.context.logger.error(
                             "%r\n%s", error, traceback.format_exc()

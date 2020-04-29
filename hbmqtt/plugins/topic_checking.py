@@ -1,4 +1,5 @@
 import asyncio
+from hbmqtt.plugins import schnorr
 
 
 class BaseTopicPlugin:
@@ -34,6 +35,26 @@ class TopicTabooPlugin(BaseTopicPlugin):
                 return True
             else:
                 return False
+        return filter_result
+
+
+class Secp256k1TopicPlugin(BaseTopicPlugin):
+    def __init__(self, context):
+        super().__init__(context)
+
+    @asyncio.coroutine
+    def topic_filtering(self, *args, **kwargs):
+        filter_result = super().topic_filtering(*args, **kwargs)
+        if filter_result:
+            session = kwargs.get('session', None)
+            topic = kwargs.get('topic', None)
+            if any([
+                topic.startswith(root) for root in
+                self.topic_config.get("secp256k1-roots", [])
+            ]):
+                return True if getattr(session, "_secp256k1", False) else False
+            else:
+                return True
         return filter_result
 
 

@@ -49,6 +49,7 @@ setup(
             'auth_secp256k1 = hbmqtt.plugins.authentication:Secp256k1AuthPlugin',
             'auth_file = hbmqtt.plugins.authentication:FileAuthPlugin',
             'topic_taboo = hbmqtt.plugins.topic_checking:TopicTabooPlugin',
+            'topic_secp256k1 = hbmqtt.plugins.topic_checking:Secp256k1TopicPlugin',
             'topic_acl = hbmqtt.plugins.topic_checking:TopicAccessControlListPlugin',
             'broker_sys = hbmqtt.plugins.sys.broker:BrokerSysPlugin',
         ],

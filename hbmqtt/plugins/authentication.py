@@ -136,11 +136,18 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
         authenticated = super().authenticate(*args, **kwargs)
         if authenticated:
             allow_anonymous = self.auth_config.get('allow-anonymous', True)
+            allow_only_registered = self.auth_config.get(
+                'allow-only-registered', False
+            )
             session = kwargs.get('session', None)
-            if session.username:
+            if session.username is None and (
+                allow_only_registered or not allow_anonymous
+            ):
+                return False
+            elif session.username:
                 puk = session.username
                 # public key is not registered
-                if not allow_anonymous and puk not in self._puks:
+                if allow_only_registered and puk not in self._puks:
                     self.context.logger.debug("public key %s not found" % puk)
                     return False
                 else:

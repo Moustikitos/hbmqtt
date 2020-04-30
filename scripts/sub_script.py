@@ -7,7 +7,7 @@ hbmqtt_sub - MQTT 3.1.1 publisher
 Usage:
     hbmqtt_sub --version
     hbmqtt_sub (-h | --help)
-    hbmqtt_sub --url BROKER_URL -t TOPIC... [-n COUNT] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [--schnorr SECRET]
+    hbmqtt_sub --url BROKER_URL -t TOPIC... [-n COUNT] [-c CONFIG_FILE] [-i CLIENT_ID] [-q | --qos QOS] [-d] [-k KEEP_ALIVE] [--clean-session] [--ca-file CAFILE] [--ca-path CAPATH] [--ca-data CADATA] [ --will-topic WILL_TOPIC [--will-message WILL_MESSAGE] [--will-qos WILL_QOS] [--will-retain] ] [--extra-headers HEADER] [--schnorr SECRET] [--ecdsa SECRET]
 
 Options:
     -h --help           Show this screen.
@@ -20,6 +20,7 @@ Options:
     -t TOPIC...         Topic filter to subcribe
     -k KEEP_ALIVE       Keep alive timeout in second
     --schnorr SECRET    secret to use for a secp256k1 secured connection
+    --ecdsa SECRET      secret to use for an ecdsa secured connection
     --clean-session     Clean session on connect (defaults to False)
     --ca-file CAFILE]   CA file
     --ca-path CAPATH]   CA Path
@@ -46,7 +47,7 @@ from hbmqtt.version import get_version
 from docopt import docopt
 from hbmqtt.mqtt.constants import QOS_0
 from hbmqtt.utils import read_yaml_config
-from hbmqtt.plugins import schnorr
+from hbmqtt.plugins.secp256k1 import schnorr, ecdsa
 
 logger = logging.getLogger(__name__)
 
@@ -149,12 +150,17 @@ def main(*args, **kwargs):
         config['will']['qos'] = int(arguments['--will-qos'])
         config['will']['retain'] = arguments['--will-retain']
 
-    if arguments['--schnorr'] is not None:
-        prk = schnorr.hash_sha256(arguments["--schnorr"])
+    if arguments['--schnorr'] or arguments['--ecdsa']:
         msg = schnorr.hash_sha256(
             datetime.datetime.utcnow().isoformat()[:16] + client_id
         )
-        sig = binascii.hexlify(schnorr.sign(msg, prk))
+        if arguments['--schnorr'] is not None:
+            prk = schnorr.hash_sha256(arguments["--schnorr"])
+            sig = binascii.hexlify(schnorr.sign(msg, prk))
+        else:
+            prk = schnorr.hash_sha256(arguments["--ecdsa"])
+            sig = binascii.hexlify(ecdsa.sign(msg, prk))
+
         parse = urlparse.urlparse(arguments["--url"])
         puk = binascii.hexlify(
             schnorr.encoded_from_point(

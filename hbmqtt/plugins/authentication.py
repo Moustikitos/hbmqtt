@@ -155,14 +155,14 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
                         schnorr if len(session.password) == 128 else \
                         ecdsa
                     # time is used to change signature identification every
-                    # minutes. Test is performed on the curent utc minute and
+                    # 10 seconds. Test is performed on the curent 10s utc and
                     # the one before. Isoformat is YYYY-MM-DDTHH:MM:SS.ffffff
-                    # so isoformat() --> YYYY-MM-DDTHH:MM
+                    # so isoformat()[:18] --> YYYY-MM-DDTHH:MM:S
                     now = datetime.datetime.utcnow()
-                    iso_now = now.isoformat()[:16]
+                    iso_now = now.isoformat()[:18]
                     iso_now_m1 = (
-                        now - datetime.timedelta(1.0 / 1440)  # 1440 = 24*60
-                    ).isoformat()[:16]
+                        now - datetime.timedelta(1.0 / 8640)  # 86400=24*60*60
+                    ).isoformat()[:18]
                     # ecdsa signature is issued on :
                     # isoformat(utcnow)[:16] + client id
                     msg = secp256k1.hash_sha256(iso_now + session.client_id)
@@ -189,7 +189,7 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
                         self.context.logger.debug(
                             "secp256k1 auth error %s", session
                         )
-                        return None
+                        return None if allow_anonymous else False
             else:
                 return None
         return authenticated

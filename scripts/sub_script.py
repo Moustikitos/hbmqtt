@@ -112,6 +112,13 @@ def do_sub(client, arguments):
         logger.fatal("Publish canceled due to prvious error")
 
 
+def _load_if_is_file(arg):
+    if os.path.isfile(arg):
+        with open(arg, "r") as f:
+            return f.read().split()[0].strip()
+    return arg
+
+
 def main(*args, **kwargs):
     if sys.version_info[:2] < (3, 4):
         logger.fatal("Error: Python 3.4+ is required")
@@ -152,13 +159,15 @@ def main(*args, **kwargs):
 
     if arguments['--schnorr'] or arguments['--ecdsa']:
         msg = schnorr.hash_sha256(
-            datetime.datetime.utcnow().isoformat()[:16] + client_id
+            datetime.datetime.utcnow().isoformat()[:18] + client_id
         )
         if arguments['--schnorr'] is not None:
-            prk = schnorr.hash_sha256(arguments["--schnorr"])
+            arg = _load_if_is_file(arguments["--schnorr"])
+            prk = schnorr.hash_sha256(arg)
             sig = binascii.hexlify(schnorr.sign(msg, prk))
         else:
-            prk = schnorr.hash_sha256(arguments["--ecdsa"])
+            arg = _load_if_is_file(arguments["--ecdsa"])
+            prk = ecdsa.hash_sha256(arg)
             sig = binascii.hexlify(ecdsa.sign(msg, prk))
 
         parse = urlparse.urlparse(arguments["--url"])

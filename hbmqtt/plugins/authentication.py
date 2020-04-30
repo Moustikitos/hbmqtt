@@ -1,6 +1,7 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
+import sys
 import logging
 import asyncio
 import binascii
@@ -8,7 +9,7 @@ import datetime
 import traceback
 
 from passlib.apps import custom_app_context as pwd_context
-from hbmqtt.plugins import schnorr
+from hbmqtt.plugins.secp256k1 import schnorr, ecdsa
 
 
 class BaseAuthPlugin:
@@ -87,7 +88,7 @@ class FileAuthPlugin(BaseAuthPlugin):
             if session.username:
                 hash = self._users.get(session.username, None)
                 if not hash:
-                    authenticated = self.auth_config.get('allow-anonymous', True)
+                    authenticated = False
                     self.context.logger.debug("No hash found for user '%s'" % session.username)
                 else:
                     authenticated = pwd_context.verify(session.password, hash)
@@ -102,7 +103,7 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
     """
     def __init__(self, context):
         super().__init__(context)
-        self._puks = []  # to store allowed public keys
+        self._puks = []  # to store allowed public keys if anonymous not allowed
         self._read_public_keys()
 
     def _read_public_keys(self):
@@ -117,11 +118,14 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
                                 e.strip() for e in l.split(sep=":", maxsplit=3)[:2]
                             ]  # so ' username : password ' gives same result than 'username:password'
                             # in passord file a public key is set like :
-                            # secp256k1:030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7
+                            # secp256k1.puk:030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7
                             if username == "secp256k1.puk":
                                 self._puks.append(puk)
                                 self.context.logger.debug("secp256k1 public key %s added" % puk)
-                self.context.logger.debug("%d secp256k1 public key granted from file %s" % (len(self._puks), puk_file))
+                self.context.logger.debug(
+                    "%d secp256k1 public key granted from file %s",
+                    len(self._puks), puk_file
+                )
             except FileNotFoundError:
                 self.context.logger.warning("Password file %s not found" % puk_file)
         else:
@@ -135,11 +139,14 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
             session = kwargs.get('session', None)
             if session.username:
                 puk = session.username
-                if puk not in self._puks:
-                    # public key is not registered
-                    authenticated = allow_anonymous
+                # public key is not registered
+                if not allow_anonymous and puk not in self._puks:
                     self.context.logger.debug("public key %s not found" % puk)
+                    return False
                 else:
+                    secp256k1 = \
+                        schnorr if len(session.password) == 128 else \
+                        ecdsa
                     # time is used to change signature identification every
                     # minutes. Test is performed on the curent utc minute and
                     # the one before. Isoformat is YYYY-MM-DDTHH:MM:SS.ffffff
@@ -149,21 +156,23 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
                     iso_now_m1 = (
                         now - datetime.timedelta(1.0 / 1440)  # 1440 = 24*60
                     ).isoformat()[:16]
-                    # schnorr signature is issued on :
+                    # ecdsa signature is issued on :
                     # isoformat(utcnow)[:16] + client id
-                    msg = schnorr.hash_sha256(iso_now + session.client_id)
-                    msg_m1 = schnorr.hash_sha256(
+                    msg = secp256k1.hash_sha256(iso_now + session.client_id)
+                    msg_m1 = secp256k1.hash_sha256(
                         iso_now_m1 + session.client_id
                     )
                     # Schnorr protocol only uses x value of a secp256k1 point.
                     # puk[-64:] gives hexlified x value from encoded secp256k1
                     # point
                     try:
-                        puk = binascii.unhexlify(puk[-64:])
+                        puk = binascii.unhexlify(
+                            puk[-64:] if secp256k1 is schnorr else puk
+                        )
                         sig = binascii.unhexlify(session.password)
                         authenticated = any([
-                            schnorr.verify(msg, puk, sig),
-                            schnorr.verify(msg_m1, puk, sig)
+                            secp256k1.verify(msg, puk, sig),
+                            secp256k1.verify(msg_m1, puk, sig)
                         ])
                         setattr(session, "_secp256k1", authenticated)
                     except Exception as error:

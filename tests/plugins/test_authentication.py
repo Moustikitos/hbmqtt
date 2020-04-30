@@ -125,7 +125,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         context.config = {
             'auth': {
                 'puk-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
-                'allow-anonymous': True
+                'allow-only-registered': False
             }
         }
         s = Session()
@@ -135,7 +135,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = 'fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3'
         s.username = "02d3a9b4022ab24b9218ae3290d2cbecf6d773ef70769afe9f15e7055a79cc90c4"
         prk = binascii.unhexlify("fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3")
-        msg = ecdsa.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id)
+        msg = ecdsa.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id)
         s.password = binascii.hexlify(ecdsa.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)
@@ -149,7 +149,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         context.config = {
             'auth': {
                 'puk-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
-                'allow-anonymous': True
+                'allow-only-registered': False
             }
         }
         s = Session()
@@ -159,21 +159,21 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = 'fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3'
         s.username = "02d3a9b4022ab24b9218ae3290d2cbecf6d773ef70769afe9f15e7055a79cc90c4"
         prk = binascii.unhexlify("fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3")
-        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id)
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id)
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)
         ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
         self.assertTrue(ret)
 
-    def test_bad_anonymous_signature(self):
+    def test_bad_unknown_signature(self):
         # allow anonymous and signature is not good
         context = BaseContext()
         context.logger = logging.getLogger(__name__)
         context.config = {
             'auth': {
                 'puk-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
-                'allow-anonymous': True
+                'allow-only-registered': False
             }
         }
         s = Session()
@@ -183,7 +183,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = 'fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3'
         s.username = "02d3a9b4022ab24b9218ae3290d2cbecf6d773ef70769afe9f15e7055a79cc90c4"
         prk = binascii.unhexlify("fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3")
-        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id[1:])  # remove first char of client_id to generate a bad signature
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id[1:])  # remove first char of client_id to generate a bad signature
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)
@@ -197,7 +197,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         context.config = {
             'auth': {
                 'puk-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
-                'allow-anonymous': False
+                'allow-only-registered': True
             }
         }
         s = Session()
@@ -207,7 +207,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = '2c495f4933631f014d93f059c15b03bac6eaaead53a675e09574c4bcccab09d6'
         s.username = "030cfbf62534dfa5f32e37145b27d2875c1a1ecf884e39f0b098e962acc7aeaaa7"  # the puk actually
         prk = binascii.unhexlify("2c495f4933631f014d93f059c15b03bac6eaaead53a675e09574c4bcccab09d6")
-        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id[1:])  # remove first char of client_id to generate a bad signature
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id[1:])  # remove first char of client_id to generate a bad signature
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)
@@ -221,7 +221,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         context.config = {
             'auth': {
                 'puk-file': os.path.join(os.path.dirname(os.path.realpath(__file__)), "passwd"),
-                'allow-anonymous': False
+                'allow-only-registered': False
             }
         }
         s = Session()
@@ -231,7 +231,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         # prk = 'fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3'
         s.username = "02d3a9b4022ab24b9218ae3290d2cbecf6d773ef70769afe9f15e7055a79cc90c4"
         prk = binascii.unhexlify("fffc49122308b5e5666e6874ff4535d5a0e3f270a3a7545703c59da25378cbb3")
-        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:16] + s.client_id)
+        msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id[1:])
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
         auth_plugin = Secp256k1AuthPlugin(context)

@@ -1,5 +1,4 @@
 import asyncio
-from hbmqtt.plugins import schnorr
 
 
 class BaseTopicPlugin:

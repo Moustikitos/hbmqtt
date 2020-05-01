@@ -131,8 +131,7 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
         else:
             self.context.logger.debug("Configuration parameter 'puk-file' not found")
 
-    @asyncio.coroutine
-    def authenticate(self, *args, **kwargs):
+    async def authenticate(self, *args, **kwargs):
         authenticated = super().authenticate(*args, **kwargs)
         if authenticated:
             allow_anonymous = self.auth_config.get('allow-anonymous', True)

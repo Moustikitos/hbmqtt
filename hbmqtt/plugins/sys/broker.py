@@ -4,9 +4,13 @@
 from datetime import datetime
 from hbmqtt.mqtt.packet import PUBLISH
 from hbmqtt.codecs import int_to_bytes_str
+import json
+import random
 import asyncio
-import sys
+import traceback
+import urllib.parse as urlparse
 from collections import deque
+from urllib.request import Request, urlopen
 
 
 DOLLAR_SYS_ROOT = '$SYS/broker/'
@@ -20,6 +24,113 @@ STAT_START_TIME = 'start_time'
 STAT_CLIENTS_MAXIMUM = 'clients_maximum'
 STAT_CLIENTS_CONNECTED = 'clients_connected'
 STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
+
+
+class BrokerBlockchainPlugin:
+    def __init__(self, context):
+        self.context = context
+        # config formating
+        # 'blockchain': {
+        #     "nethash": nethash,
+        #     "endpoints": dict([(name, [method, path])...]),
+        #     "tasks": dict([(tx_type, func_name)...]),
+        #     "peers": ["scheme://ip:port"...],
+        # }
+        self._blockchain = self.context.config.get("blockchain", {})
+        self._endpoints = self._blockchain.get("endpoints", {})
+        self._ndpt_headers = {
+            "Content-type": "application/json",
+            "nethash": self._blockchain.get("nethash", "")
+        }
+        self.context.logger.debug(
+            "blockchain confguration loaded: %s, %s",
+            self._blockchain, self._ndpt_headers
+        )
+
+    # send http request to blockchain
+    async def _rest_req(self, endpoint, data={}, **qs):
+        method, path = self._endpoints.get(endpoint, ["GET", endpoint])
+        if method not in ["GET"]:
+            if isinstance(data, (dict, list, tuple)):
+                data = json.dumps(data).encode('utf-8')
+            elif isinstance(data, str):
+                # assume data is a valid json string
+                data = data.encode("utf-8")
+        else:
+            data = None
+        # build request
+        try:
+            req = Request(
+                urlparse.urlparse(
+                    random.choice(self._blockchain["peers"])
+                )._replace(
+                    path=path,
+                    query="&".join(["=".join(item) for item in qs.items()])
+                ).geturl(),
+                data, self._ndpt_headers
+            )
+            req.get_method = lambda: method
+        except Exception as error:
+            self.context.logger.error("%r\n%s", error, traceback.format_exc())
+        else:
+            self.context.logger.debug(
+                "blockchain request prepared: %s %s %s",
+                method, req.get_full_url(), data
+            )
+            try:
+                data = urlopen(req).read()
+                result = json.loads(data)
+            except Exception as error:
+                self.context.logger.error(
+                    "%r\n%s", error, traceback.format_exc()
+                )
+            else:
+                return result
+        return {}
+
+    # function to check if a message sent to specific blockchain topic is
+    # genuinely sent from blockchain. If any task linked to transaction type
+    # it is executed with the data sent by blockchain.
+    async def on_broker_message_received(self, *args, **kwargs):
+        truth = False  # truth is true if data comes from blockchain
+        message = kwargs["message"]
+        if message.topic in self._blockchain.get('topics', []):
+            try:
+                data = json.loads(message.data)
+                truth = any(
+                    (
+                        await self._rest_req(
+                            "/api/transactions", id=data["id"]
+                        )
+                    ).get("data", [])
+                )
+            except Exception as error:
+                self.context.logger.error(
+                    "%r\n%s", error, traceback.format_exc()
+                )
+
+        if not truth:
+            return False
+
+        func = getattr(
+            self,
+            self._blockchain.get("tasks", {}).get(data["type"], "?"),
+            lambda *a, **k: False
+        )
+
+        self.context.logger.debug(
+            "genuine data received from blockchain by '%s' on '%s' topic\n",
+            kwargs["client_id"], message.topic
+        )
+        self.context.logger.debug(
+            "broker plugin function %s triggered with data: %s",
+            func.__name__, data
+        )
+
+        return func(self, data)
+
+    def register_device(self, data):
+        pass
 
 
 class BrokerSysPlugin:

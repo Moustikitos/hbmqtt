@@ -2,6 +2,7 @@
 
 VENVDIR="$HOME/.local/share/ark-broker/venv"
 GITREPO="https://github.com/Moustikitos/hbmqtt.git"
+YAML="https://raw.githubusercontent.com/Moustikitos/hbmqtt/master/ark-broker/ark-broker.yaml"
 
 clear
 
@@ -58,6 +59,8 @@ echo
 echo configuring service
 echo ===================
 
+wget -P $HOME/.config '$YAML' -O ark-broker.yaml
+
 cat > $HOME/ark-broker.service << EOF
 [Unit]
 Description=Ark IOT broker
@@ -73,6 +76,7 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
+wget 
 sudo mv $HOME/ark-broker.service /etc/systemd/system
 sudo systemctl daemon-reload
 sudo systemctl start ark-broker

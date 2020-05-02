@@ -136,7 +136,7 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
         if authenticated:
             allow_anonymous = self.auth_config.get('allow-anonymous', True)
             allow_only_registered = self.auth_config.get(
-                'allow-only-registered', False
+                'restricted-puk', False
             )
             session = kwargs.get('session', None)
             if session.username is None and (

@@ -59,7 +59,7 @@ echo
 echo configuring service
 echo ===================
 
-wget -P $HOME/.config $YAML
+wget -q -P $HOME/.config $YAML
 
 cat > $HOME/ark-broker.service << EOF
 [Unit]
@@ -76,6 +76,19 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
+if [ -f /etc/systemd/system/ark-broker.service ]; then
+    sudo systemctl stop ark-broker
+fi
+
 sudo mv $HOME/ark-broker.service /etc/systemd/system
 sudo systemctl daemon-reload
+
+echo "done"
+
+echo
+echo starting broker service
+echo =======================
+
 sudo systemctl start ark-broker
+
+echo "done"

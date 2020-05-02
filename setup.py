@@ -17,6 +17,7 @@ setup(
     include_package_data=True,
     platforms='all',
     install_requires=[
+        'future',
         'transitions',
         'websockets',
         'passlib',

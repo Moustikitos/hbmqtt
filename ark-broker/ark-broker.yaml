@@ -1,0 +1,35 @@
+auth:
+  allow-anonymous: true
+  restricted-puk: false
+  plugins:
+  - auth_secp256k1
+  - broker_bc
+listeners:
+  default:
+    bind: 0.0.0.0:1883
+    max-connections: 50000
+    type: tcp
+  ws-1:
+    bind: 0.0.0.0:8081
+    type: ws
+topic-check:
+  enabled: true
+  secp256k1-roots:
+  - ark/
+  - blockchain/
+  plugins:
+  - topic_taboo
+  - topic_secp256k1
+broker-blockchain:
+  nethash: 6e84d08bd299ed97c212c886c98a57e36545c8f5d645ca7eeae63a8bd62d8988
+  peers:
+  - https://explorer.ark.io:8443
+  topics:
+  - blockchain/event
+  python-bindings:
+    # topic: [module=None, function]
+    # if module == None: get function from plugin instance
+    # else if module loaded on plugin initialization, use module.function
+    blockchain/event: [null, test]
+  endpoints:
+    configuration: [GET, /api/node/configuration]

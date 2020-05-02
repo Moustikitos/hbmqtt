@@ -59,7 +59,7 @@ echo
 echo configuring service
 echo ===================
 
-wget -P $HOME/.config $YAML -O ark-broker.yaml
+wget -P $HOME/.config $YAML
 
 cat > $HOME/ark-broker.service << EOF
 [Unit]
@@ -68,15 +68,14 @@ After=network.target
 
 [Service]
 User=$USER
-WorkingDirectory=$VENVDIR/lib/python3.7/site-packages/scripts
-ExecStart=$(which python) broker_script.py -c $HOME/.config/ark-broker.yaml
+WorkingDirectory=$VENVDIR
+ExecStart=$VENVDIR/bin/hbmqtt -c $HOME/.config/ark-broker.yaml
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-wget 
 sudo mv $HOME/ark-broker.service /etc/systemd/system
 sudo systemctl daemon-reload
 sudo systemctl start ark-broker

@@ -24,12 +24,11 @@ broker-blockchain:
   nethash: 6e84d08bd299ed97c212c886c98a57e36545c8f5d645ca7eeae63a8bd62d8988
   peers:
   - https://explorer.ark.io:8443
-  topics:
-  - blockchain/event
-  python-bindings:
-    # topic: [module=None, function]
-    # if module == None: get function from plugin instance
-    # else if module loaded on plugin initialization, use module.function
-    blockchain/event: [null, test]
+  bridged-topics:
+    blockchain/event: [null, dummy]
+  # [bridged-topics]
+  #   topic: [module=None, function]
+  #   if module == None: get function from plugin instance
+  #   else if module loaded on plugin initialization, use module.function
   endpoints:
     configuration: [GET, /api/node/configuration]

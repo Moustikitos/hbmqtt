@@ -38,8 +38,7 @@ class BrokerBlockchainPlugin:
         # 'blockchain': {
         #     "nethash": nethash,
         #     "peers": [scheme://ip:port, ...],
-        #     "topics": [topic, ...],
-        #     "python-bindings": dict([(topic, [mod=None, func]), ...]),
+        #     "bridged-topics": dict([(topic, [mod=None, func]), ...]),
         #     "endpoints": dict([(name, [method, path]), ...]),
         # }
         self._blockchain = self.context.config.get("broker-blockchain", {})
@@ -50,7 +49,7 @@ class BrokerBlockchainPlugin:
         }
         # import python-bindings:
         for t, (m, f) in list(
-            self._blockchain.get('python-bindings', {}).items()
+            self._blockchain.get('bridged-topics', {}).items()
         ):
             if m is not None and m not in sys.modules:
                 try:
@@ -60,7 +59,7 @@ class BrokerBlockchainPlugin:
                         "%s python binding not loaded (%r)",
                         m, error
                     )
-                    self._blockchain['python-bindings'].pop(t)
+                    self._blockchain['bridged-topics'].pop(t)
 
     # send http request to blockchain
     async def bc_request(self, endpoint, data={}, **qs):
@@ -83,6 +82,7 @@ class BrokerBlockchainPlugin:
                 ).geturl(),
                 data, self._ndpt_headers
             )
+            req.add_header("User-agent", "Mozilla/5.0")
             req.get_method = lambda: method
         except Exception as error:
             self.context.logger.error("%r\n%s", error, traceback.format_exc())
@@ -94,6 +94,7 @@ class BrokerBlockchainPlugin:
             try:
                 result = json.loads(urlopen(req).read())
             except Exception as error:
+                return {}
                 self.context.logger.error(
                     "%r\n%s", error, traceback.format_exc()
                 )
@@ -112,7 +113,9 @@ class BrokerBlockchainPlugin:
             ):
                 if key in data:
                     id_ = data.get("id", False)
-                    qs = {"id": id_} if id_ else {key: data[key]}
+                    qs = \
+                        {"id": id_, key: data[key]} if id_ else \
+                        {key: data[key]}
                     data = (await self.bc_request(path, **qs)).get("data", [])
                     truth = any(data)
                     break
@@ -122,17 +125,18 @@ class BrokerBlockchainPlugin:
             )
 
         if not truth:
-            self.context.logger.info("not genuine data: %s", data)
             return False
         else:
-            self.context.logger.info("genuine data received: %s", data)
+            self.context.logger.debug("genuined data: %s", data)
             return data[0] if isinstance(data, list) else data
 
     async def on_broker_message_received(self, *args, **kwargs):
         message = kwargs["message"]
         topic = message.topic
         if not any(
-            [topic.startswith(t) for t in self._blockchain.get('topics', [])]
+            [topic.startswith(t) for t in self._blockchain.get(
+                'bridged-topics', []
+            )]
         ):
             return False
 
@@ -140,7 +144,7 @@ class BrokerBlockchainPlugin:
         if not data:
             return False
 
-        modname, funcname = self._blockchain.get("python-bindings", {}).get(
+        modname, funcname = self._blockchain.get("bridged-topics", {}).get(
             topic, [None, None]
         )
         if modname is not None:
@@ -158,8 +162,8 @@ class BrokerBlockchainPlugin:
             return func(self, data)
 
     @staticmethod
-    def test(cls, data):
-        cls.context.logger.debug("dummy function 'test': %s", data)
+    def dummy(cls, data):
+        cls.context.logger.info("dummy function says: %s", data)
 
 
 class BrokerSysPlugin:

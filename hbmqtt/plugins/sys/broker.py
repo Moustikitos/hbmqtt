@@ -31,16 +31,14 @@ STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
 class BrokerBlockchainPlugin:
 
     endpoints = property(lambda cls: cls._endpoints.keys(), None, None, "")
+    topics = property(
+        lambda cls: cls._blockchain.get('bridged-topics', {}).keys(),
+        None, None, ""
+    )
     config = property(lambda cls: cls._blockchain, None, None, "")
 
     def __init__(self, context):
         self.context = context
-        # 'blockchain': {
-        #     "nethash": nethash,
-        #     "peers": [scheme://ip:port, ...],
-        #     "bridged-topics": dict([(topic, [mod=None, func]), ...]),
-        #     "endpoints": dict([(name, [method, path]), ...]),
-        # }
         self._blockchain = self.context.config.get("broker-blockchain", {})
         self._endpoints = self._blockchain.get("endpoints", {})
         self._ndpt_headers = {
@@ -103,13 +101,13 @@ class BrokerBlockchainPlugin:
                 return result
         return {}
 
-    async def genuinize(self, data):
+    async def _genuinize(self, data):
         truth = False
         try:
             data = json.loads(data)
             for key, path in zip(
-                ["type", "address", "height"],
-                ["/api/transactions", "/api/wallets", "/api/blocks"]
+                ["type", "height"],
+                ["/api/transactions", "/api/blocks"]
             ):
                 if key in data:
                     id_ = data.get("id", False)
@@ -140,7 +138,7 @@ class BrokerBlockchainPlugin:
         ):
             return False
 
-        data = await self.genuinize(message.data)
+        data = await self._genuinize(message.data)
         if not data:
             return False
 

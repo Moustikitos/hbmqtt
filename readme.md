@@ -10,13 +10,23 @@ This reposiory is a modification of [hbmqtt](https://hbmqtt.readthedocs.io/en/la
 
 ## Install
 
+### Linux
+
 ```bash
 $ bash <(curl -s https://raw.githubusercontent.com/Moustikitos/hbmqtt/master/ark-broker/install-ark-broker.sh)
 ```
 
 This installation script will manage dependencies and virtual environement needed to run `ark-broker`.
 
+### Windows
+
+```cmd
+pip install git+https://github.com/Moustikitos/hbmqtt.git
+```
+
 ## Configure / check
+
+### linux
 
 Broker configuration is done in a [`yaml`](https://yaml.org/) file, you can edit it with a simple text editor.
 
@@ -24,7 +34,7 @@ Broker configuration is done in a [`yaml`](https://yaml.org/) file, you can edit
 $ nano $HOME/.config/ark-broker.yaml
 ```
 
-`ark-broker` is set as a linux service. It responds to `journalctl` and `systemctl` commands.
+On unix system, `ark-broker` is set as a linux service. It responds to `journalctl` and `systemctl` commands:
 
 ```bash
 # check broker log
@@ -35,6 +45,13 @@ $ sudo systemctl (start|stop|restart) ark-broker
 $ sudo systemctl (enable|disable) ark-broker
 # check broker service
 $ sudo systemctl status ark-broker
+```
+
+### Windows
+
+Download `yaml` [configuration file](https://raw.githubusercontent.com/Moustikitos/hbmqtt/master/ark-broker/ark-broker.yaml) and use `hbmqtt` command:
+```cmd
+hbmqtt -c full\path\to\ark-broker.yaml
 ```
 
 ## Bridge concept
@@ -66,7 +83,7 @@ broker-blockchain:
         configuration: [GET, /api/node/configuration]
 ```
 
-Bridged topics are listed in `bridged-topics` field of the `yaml` config. They are stored in an hbmqtt plugin as python dictionary, topic as keys, modules and function as value. All modules are imported on plugin initialization as the broker starts. if module is not found, `ImportError` exception is ignored and associated topic is removed.
+Bridged topics are listed in `bridged-topics` field of the `yaml` config. They are stored in an hbmqtt plugin as python dictionary, topic as keys, module-function pair as value. Modules are imported on plugin initialization as the broker starts. if a module is not found, `ImportError` exception is ignored and associated topic is removed.
 
 Once a message is received on a bridged topic, even if there is no subscription, `module.function` is called with plugin itself and genuine data provided by plockchain (when module is `None`, the `function` is found in the plugin). Genuine data is either a transaction (`dict`) or a block (`dict`).
 
@@ -86,7 +103,7 @@ plg.config
 # `endpoints` part of yaml conf as key list
 plg.endpoints
 # awaitable blockchain request
-#   - endpoint: either a valid path (/api/transactions) or a value from plg.endpoints
+#   - endpoint: either a valid path ('/api/transactions') or a value from plg.endpoints
 #   - data: dict or list for HTTP request with body
 #   - qs: keyword argument to add a query string to the url
 await plg.bc_request(endpoint, data={}, **qs)
@@ -94,4 +111,4 @@ await plg.bc_request(endpoint, data={}, **qs)
 
 ### Sequence
 
-[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBOZXR3b3JrXG5QYXJ0aWNpcGFudCBCcm9rZXJcbiAgICBOb3RlIGxlZnQgb2YgTmV0d29yazogTmV0d29yayBjb3VsZCBiZTxici8-YSBibG9ja2NoYWluIG5vZGU8YnIvPm9yIHNvbWV0aGluZyBlbHNlXG4gICAgTmV0d29yay0-PkJyb2tlcjogZGF0YSBzZW50IG9uIGJyaWRnZWQgdG9waWNcbiAgICBhbHQgZGF0YSBzZWVtcyBnb29kIGVub3VnaFxuICAgICAgICBOb3RlIG92ZXIgQnJva2VyOiBkYXRhIGhhcyB0byBiZSBhPGJyLz52YWxpZCBqc29uIHN0cmluZzxici8-YW5kIGNvbnRhaW5zIGF0IDxici8-bGVhc3QgaWQgYW5kIGhlaWdodDxici8-b3IgdHlwZSBmaWVsZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiBhc2sgZWxlbWVudFxuICAgICAgICBhbHQgYmxvY2tjaGFpbiBzZW5kcyBlbGVtZW50XG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbdHggb3IgYmxvY2tdXG4gICAgICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGV4ZWN1dGUgY29kZShwbGcsIHR4IG9yIGJsb2NrKVxuICAgICAgICBlbHNlIGJsb2NrY2hhaW4gc2VuZHMgbm90aGluZ1xuICAgICAgICAgICAgQmxvY2tjaGFpbi0-PkJyb2tlcjogWyBdXG4gICAgICAgIGVuZFxuICAgIGVsc2UgZGF0YSBub3QgZ29vZCBlbm91Z2hcbiAgICAgICAgQnJva2VyLS0-PkJyb2tlcjogaWdub3JlXG4gICAgZW5kXG4gICAgQnJva2VyLT4-QnJva2VyOiBmb3J3YXJkIGRhdGEgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBOZXR3b3JrXG5QYXJ0aWNpcGFudCBCcm9rZXJcbiAgICBOb3RlIGxlZnQgb2YgTmV0d29yazogTmV0d29yayBjb3VsZCBiZTxici8-YSBibG9ja2NoYWluIG5vZGU8YnIvPm9yIHNvbWV0aGluZyBlbHNlXG4gICAgTmV0d29yay0-PkJyb2tlcjogZGF0YSBzZW50IG9uIGJyaWRnZWQgdG9waWNcbiAgICBhbHQgZGF0YSBzZWVtcyBnb29kIGVub3VnaFxuICAgICAgICBOb3RlIG92ZXIgQnJva2VyOiBkYXRhIGhhcyB0byBiZSBhPGJyLz52YWxpZCBqc29uIHN0cmluZzxici8-YW5kIGNvbnRhaW5zIGF0IDxici8-bGVhc3QgaWQgYW5kIGhlaWdodDxici8-b3IgdHlwZSBmaWVsZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiBhc2sgZWxlbWVudFxuICAgICAgICBhbHQgYmxvY2tjaGFpbiBzZW5kcyBlbGVtZW50XG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbdHggb3IgYmxvY2tdXG4gICAgICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGV4ZWN1dGUgY29kZShwbGcsIHR4IG9yIGJsb2NrKVxuICAgICAgICBlbHNlIGJsb2NrY2hhaW4gc2VuZHMgbm90aGluZ1xuICAgICAgICAgICAgQmxvY2tjaGFpbi0-PkJyb2tlcjogWyBdXG4gICAgICAgIGVuZFxuICAgIGVsc2UgZGF0YSBub3QgZ29vZCBlbm91Z2hcbiAgICAgICAgQnJva2VyLS0-PkJyb2tlcjogaWdub3JlXG4gICAgZW5kXG4gICAgQnJva2VyLT4-QnJva2VyOiBmb3J3YXJkIGRhdGEgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
+[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBOZXR3b3JrXG5QYXJ0aWNpcGFudCBCcm9rZXJcbiAgICBOb3RlIGxlZnQgb2YgTmV0d29yazogTmV0d29yayBjb3VsZCBiZTxici8-YSBibG9ja2NoYWluIG5vZGU8YnIvPm9yIHNvbWV0aGluZyBlbHNlXG4gICAgTmV0d29yay0-PkJyb2tlcjogZGF0YSBzZW50IG9uIGJyaWRnZWQgdG9waWNcbiAgICBhbHQgZGF0YSBzZWVtcyBnb29kIGVub3VnaFxuICAgICAgICBOb3RlIG92ZXIgQnJva2VyOiBkYXRhIGhhcyB0byBiZSBhPGJyLz52YWxpZCBqc29uIHN0cmluZzxici8-YW5kIGNvbnRhaW5zIGF0IDxici8-bGVhc3QgaWQgYW5kIGhlaWdodDxici8-b3IgdHlwZSBmaWVsZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiBhc2sgZWxlbWVudFxuICAgICAgICBhbHQgYmxvY2tjaGFpbiBzZW5kcyBlbGVtZW50XG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbdHggb3IgYmxvY2tdXG4gICAgICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGNhbGwgbW9kdWxlLmZ1bmN0aW9uKHBsZywgdHggb3IgYmxvY2spXG4gICAgICAgIGVsc2UgYmxvY2tjaGFpbiBzZW5kcyBub3RoaW5nXG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbIF1cbiAgICAgICAgZW5kXG4gICAgZWxzZSBkYXRhIG5vdCBnb29kIGVub3VnaFxuICAgICAgICBCcm9rZXItLT4-QnJva2VyOiBpZ25vcmVcbiAgICBlbmRcbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgZGF0YSB0byBzdWJzY3JpYmVycyAoaWYgYW55KVxuIiwibWVybWFpZCI6eyJ0aGVtZSI6ImZvcmVzdCJ9LCJ1cGRhdGVFZGl0b3IiOmZhbHNlfQ)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBOZXR3b3JrXG5QYXJ0aWNpcGFudCBCcm9rZXJcbiAgICBOb3RlIGxlZnQgb2YgTmV0d29yazogTmV0d29yayBjb3VsZCBiZTxici8-YSBibG9ja2NoYWluIG5vZGU8YnIvPm9yIHNvbWV0aGluZyBlbHNlXG4gICAgTmV0d29yay0-PkJyb2tlcjogZGF0YSBzZW50IG9uIGJyaWRnZWQgdG9waWNcbiAgICBhbHQgZGF0YSBzZWVtcyBnb29kIGVub3VnaFxuICAgICAgICBOb3RlIG92ZXIgQnJva2VyOiBkYXRhIGhhcyB0byBiZSBhPGJyLz52YWxpZCBqc29uIHN0cmluZzxici8-YW5kIGNvbnRhaW5zIGF0IDxici8-bGVhc3QgaWQgYW5kIGhlaWdodDxici8-b3IgdHlwZSBmaWVsZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiBhc2sgZWxlbWVudFxuICAgICAgICBhbHQgYmxvY2tjaGFpbiBzZW5kcyBlbGVtZW50XG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbdHggb3IgYmxvY2tdXG4gICAgICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGNhbGwgbW9kdWxlLmZ1bmN0aW9uKHBsZywgdHggb3IgYmxvY2spXG4gICAgICAgIGVsc2UgYmxvY2tjaGFpbiBzZW5kcyBub3RoaW5nXG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbIF1cbiAgICAgICAgZW5kXG4gICAgZWxzZSBkYXRhIG5vdCBnb29kIGVub3VnaFxuICAgICAgICBCcm9rZXItLT4-QnJva2VyOiBpZ25vcmVcbiAgICBlbmRcbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgZGF0YSB0byBzdWJzY3JpYmVycyAoaWYgYW55KVxuIiwibWVybWFpZCI6eyJ0aGVtZSI6ImZvcmVzdCJ9LCJ1cGRhdGVFZGl0b3IiOmZhbHNlfQ)

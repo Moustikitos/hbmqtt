@@ -26,9 +26,11 @@ pip install git+https://github.com/Moustikitos/hbmqtt.git
 
 ## Configure / check
 
+Broker configuration is done in a [`yaml`](https://yaml.org/) file, you can edit it with a simple text editor.
+
 ### linux
 
-Broker configuration is done in a [`yaml`](https://yaml.org/) file, you can edit it with a simple text editor.
+`yaml` file is stored into user configuration folder.
 
 ```bash
 $ nano $HOME/.config/ark-broker.yaml
@@ -47,9 +49,19 @@ $ sudo systemctl (enable|disable) ark-broker
 $ sudo systemctl status ark-broker
 ```
 
+Configure `ark-broker` unit file:
+
+```bash
+$ sudo nano /etc/systemd/system/ark-broker.service
+...
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart ark-broker
+```
+
 ### Windows
 
 Download `yaml` [configuration file](https://raw.githubusercontent.com/Moustikitos/hbmqtt/master/ark-broker/ark-broker.yaml) and use `hbmqtt` command:
+
 ```cmd
 hbmqtt -c full\path\to\ark-broker.yaml
 ```

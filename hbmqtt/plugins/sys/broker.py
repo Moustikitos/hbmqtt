@@ -4,12 +4,14 @@
 from datetime import datetime
 from hbmqtt.mqtt.packet import PUBLISH
 from hbmqtt.codecs import int_to_bytes_str
+import os
 import sys
 import json
 import random
 import asyncio
 import traceback
 import importlib
+import subprocess
 import urllib.parse as urlparse
 from collections import deque
 from urllib.request import Request, urlopen
@@ -26,6 +28,56 @@ STAT_START_TIME = 'start_time'
 STAT_CLIENTS_MAXIMUM = 'clients_maximum'
 STAT_CLIENTS_CONNECTED = 'clients_connected'
 STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
+
+
+def publish(broker, topic, message, qos=1, venv=None):
+    """
+    Send message on a topic using a specific broker. This function calls
+    hbmqtt_pub command in a python subprocess where a virtualenv can be
+    specified if needed (folder where `activate` script is localized).
+
+    Args:
+        broker (:class:`str`): valid borker url (ie mqtt://127.0.0.1)
+        topic (:class:`str`): topic to use
+        message (:class:`str`): message to send
+        qos (:class:`int`): quality of service [default: 2]
+        venv (:class:`str`): virtualenv folder [default: None]
+    Returns:
+        :class:`str`: subprocess stdout and stderr
+    """
+    # build hbmqtt_pub command line
+    # see ~ https://hbmqtt.readthedocs.io/en/latest/references/hbmqtt_pub.html
+    cmd = (
+        "hbmqtt_pub --url %(broker)s "
+        "-t %(topic)s -m '%(message)s' --qos %(qos)s"
+    ) % {
+        "broker": broker,
+        "topic": topic,
+        "message": message,
+        "qos": qos
+    }
+
+    if venv is not None:
+        # check if venv exists and add venv activation in command line
+        activate = os.path.expanduser(os.path.join(venv, "activate"))
+        if os.path.exists(activate):
+            # `.` is used instead of `source`
+            cmd = (". %s\n" % activate) + cmd
+
+    # build a python subprocess and send command
+    output, errors = subprocess.Popen(
+        [],
+        executable='/bin/bash',
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    ).communicate(cmd.encode('utf-8'))
+
+    # return stdout and stderr as str
+    return (
+        output.decode("utf-8") if isinstance(output, bytes) else output,
+        errors.decode("utf-8") if isinstance(errors, bytes) else errors
+    )
 
 
 class BrokerBlockchainPlugin:
@@ -128,14 +180,18 @@ class BrokerBlockchainPlugin:
             self.context.logger.debug("genuined data: %s", data)
             return data[0] if isinstance(data, list) else data
 
-    async def on_broker_message_received(self, *args, **kwargs):
-        message = kwargs["message"]
-        topic = message.topic
-        if not any(
+    def _is_bridged_topic(self, topic):
+        return any(
             [topic.startswith(t) for t in self._blockchain.get(
                 'bridged-topics', []
             )]
-        ):
+        )
+
+    async def on_broker_message_received(self, *args, **kwargs):
+        message = kwargs["message"]
+        topic = message.topic
+
+        if not self._is_bridged_topic(topic):
             return False
 
         data = await self._genuinize(message.data)
@@ -162,6 +218,52 @@ class BrokerBlockchainPlugin:
     @staticmethod
     def dummy(cls, data):
         cls.context.logger.info("dummy function says: %s", data)
+
+
+class BlockchainRelayPlugin(BrokerBlockchainPlugin):
+
+    def __init__(self, context):
+        BrokerBlockchainPlugin.__init__(self, context)
+        self.broker_port = self.context.config.get("listeners", {}).get(
+            "defaults", "127.0.0.1:1884"
+        ).split(":")[-1]
+
+    def _is_relay_topic(self, topic):
+        return any(
+            [topic.startswith(t) for t in self._blockchain.get(
+                'relay-topics', []
+            )]
+        )
+
+    async def on_broker_message_received(self, *args, **kwargs):
+        message = kwargs["message"]
+        topic = message.topic
+
+        try:
+            if not self._is_relay_topic(topic):
+                resp = {"status": 401}
+            elif "post_transactions" in self.endpoints:
+                data = json.loads(message.data)
+                resp = self.bc_request(
+                    "post_transactions", {
+                        "transactions":
+                            [data] if not isinstance(data, list) else data
+                    }
+                )
+            else:
+                resp = {"status": 404}
+        except Exception as error:
+            resp = {"status": 500}
+            self.context.logger.error(
+                "%r\n%s", error, traceback.format_exc()
+            )
+
+        # create a message to send to topic
+        broker_url = "mqtt://127.0.0.1:%s" % self.broker_port
+        venv = os.path.dirname(sys.prefix)
+        self.context.logger.info("\n".join(
+            publish(broker_url, topic, json.dumps(resp), qos=0x02, venv=venv)
+        ))
 
 
 class BrokerSysPlugin:

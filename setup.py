@@ -54,6 +54,7 @@ setup(
             'topic_acl = hbmqtt.plugins.topic_checking:TopicAccessControlListPlugin',
             'broker_sys = hbmqtt.plugins.sys.broker:BrokerSysPlugin',
             'broker_bc = hbmqtt.plugins.sys.broker:BrokerBlockchainPlugin',
+            'bc_relay = hbmqtt.plugins.sys.broker:BlockchainRelayPlugin',
         ],
         'hbmqtt.client.plugins': [
             'packet_logger_plugin = hbmqtt.plugins.logging:PacketLoggerPlugin',

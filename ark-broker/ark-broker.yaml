@@ -28,7 +28,7 @@ broker-blockchain:
   relay-topics:
   - ark/relay
   bridged-topics:
-    ark/event: [null, dummy]
+    ark/bridge: [null, dummy]
   endpoints:
     configuration: [GET, /api/node/configuration]
     post_transactions: [POST, /api/transactions]

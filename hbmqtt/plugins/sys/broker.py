@@ -244,7 +244,7 @@ class BlockchainRelayPlugin(BrokerBlockchainPlugin):
                 resp = {"status": 401}
             elif "post_transactions" in self.endpoints:
                 data = json.loads(message.data)
-                resp = self.bc_request(
+                resp = await self.bc_request(
                     "post_transactions", {
                         "transactions":
                             [data] if not isinstance(data, list) else data

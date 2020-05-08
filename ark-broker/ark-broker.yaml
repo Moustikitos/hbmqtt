@@ -17,7 +17,7 @@ listeners:
 topic-check:
   enabled: true
   secp256k1-roots:
-  - ark/
+  - blockchain/
   plugins:
   - topic_taboo
   - topic_secp256k1
@@ -26,9 +26,9 @@ broker-blockchain:
   peers:
   - https://explorer.ark.io:8443
   relay-topics:
-  - ark/relay
+  - blockchain/relay
   bridged-topics:
-    ark/bridge: [null, dummy]
+    blockchain/bridge: [null, dummy]
   endpoints:
     configuration: [GET, /api/node/configuration]
     post_transactions: [POST, /api/transactions]

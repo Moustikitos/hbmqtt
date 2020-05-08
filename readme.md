@@ -68,11 +68,11 @@ hbmqtt -c full\path\to\ark-broker.yaml
 
 ## Bridge concept
 
-### Sequence
+### Listening
 
 [![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBOZXR3b3JrXG5QYXJ0aWNpcGFudCBCcm9rZXJcbiAgICBOb3RlIGxlZnQgb2YgTmV0d29yazogTmV0d29yayBjb3VsZCBiZTxici8-YSBibG9ja2NoYWluIG5vZGU8YnIvPm9yIHNvbWV0aGluZyBlbHNlXG4gICAgTmV0d29yay0-PkJyb2tlcjogZGF0YSBzZW50IG9uIGJyaWRnZWQgdG9waWNcbiAgICBhbHQgZGF0YSBzZWVtcyBnb29kIGVub3VnaFxuICAgICAgICBOb3RlIG92ZXIgQnJva2VyOiBkYXRhIGhhcyB0byBiZSBhPGJyLz52YWxpZCBqc29uIHN0cmluZzxici8-YW5kIGNvbnRhaW5zIGF0IDxici8-bGVhc3QgaWQgYW5kIGhlaWdodDxici8-b3IgdHlwZSBmaWVsZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiBhc2sgZWxlbWVudFxuICAgICAgICBhbHQgYmxvY2tjaGFpbiBzZW5kcyBlbGVtZW50XG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbdHggb3IgYmxvY2tdXG4gICAgICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IG1vZHVsZS5mdW5jdGlvbihwbGcsIHR4IG9yIGJsb2NrKVxuICAgICAgICBlbHNlIGJsb2NrY2hhaW4gc2VuZHMgbm90aGluZ1xuICAgICAgICAgICAgQmxvY2tjaGFpbi0-PkJyb2tlcjogWyBdXG4gICAgICAgIGVuZFxuICAgIGVsc2UgZGF0YSBub3QgZ29vZCBlbm91Z2hcbiAgICAgICAgQnJva2VyLS0-PkJyb2tlcjogaWdub3JlXG4gICAgZW5kXG4gICAgQnJva2VyLT4-QnJva2VyOiBmb3J3YXJkIGRhdGEgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBOZXR3b3JrXG5QYXJ0aWNpcGFudCBCcm9rZXJcbiAgICBOb3RlIGxlZnQgb2YgTmV0d29yazogTmV0d29yayBjb3VsZCBiZTxici8-YSBibG9ja2NoYWluIG5vZGU8YnIvPm9yIHNvbWV0aGluZyBlbHNlXG4gICAgTmV0d29yay0-PkJyb2tlcjogZGF0YSBzZW50IG9uIGJyaWRnZWQgdG9waWNcbiAgICBhbHQgZGF0YSBzZWVtcyBnb29kIGVub3VnaFxuICAgICAgICBOb3RlIG92ZXIgQnJva2VyOiBkYXRhIGhhcyB0byBiZSBhPGJyLz52YWxpZCBqc29uIHN0cmluZzxici8-YW5kIGNvbnRhaW5zIGF0IDxici8-bGVhc3QgaWQgYW5kIGhlaWdodDxici8-b3IgdHlwZSBmaWVsZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiBhc2sgZWxlbWVudFxuICAgICAgICBhbHQgYmxvY2tjaGFpbiBzZW5kcyBlbGVtZW50XG4gICAgICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiBbdHggb3IgYmxvY2tdXG4gICAgICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IG1vZHVsZS5mdW5jdGlvbihwbGcsIHR4IG9yIGJsb2NrKVxuICAgICAgICBlbHNlIGJsb2NrY2hhaW4gc2VuZHMgbm90aGluZ1xuICAgICAgICAgICAgQmxvY2tjaGFpbi0-PkJyb2tlcjogWyBdXG4gICAgICAgIGVuZFxuICAgIGVsc2UgZGF0YSBub3QgZ29vZCBlbm91Z2hcbiAgICAgICAgQnJva2VyLS0-PkJyb2tlcjogaWdub3JlXG4gICAgZW5kXG4gICAgQnJva2VyLT4-QnJva2VyOiBmb3J3YXJkIGRhdGEgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
 
-Bridging is done with `yaml` configuration:
+Listening is set with `yaml` configuration:
 
 ```yaml
 auth:
@@ -87,7 +87,7 @@ broker-blockchain:
     # peers: mandatory, at least one valid peer is needed
     peers:
     - https://explorer.ark.io:8443
-    # bridget-topics: mandatory
+    # bridged-topics: mandatory
     #   topic: [module=None, function]
     #   if module is None: use plugin instance function
     #   else if module loaded on plugin initialization: use module.function
@@ -123,4 +123,36 @@ plg.endpoints
 #   - data: dict or list for HTTP request with body
 #   - qs: keyword argument to add a query string to the url
 await plg.bc_request(endpoint, data={}, **qs)
+```
+
+
+### Relaying
+
+[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc2luZ1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc2luZ1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
+
+Relaying is set with `yaml` configuration:
+
+```yaml
+auth:
+    ...
+    plugins:
+    # bc_relay: mandatory plugin to activate the bridge
+    - bc_relay
+    # auth_anonymous : mandatory for blockchain response
+    - auth_anonymous
+    allow-anonymous: true
+...
+broker-blockchain:
+    # nethash: not mandatory if only GET requests are sent by broker
+    nethash: 6e84d08bd299ed97c212c886c98a57e36545c8f5d645ca7eeae63a8bd62d8988
+    # peers: mandatory, at least one valid peer is needed
+    peers:
+    - https://explorer.ark.io:8443
+    # relay-topics: mandatory
+    relay-topics:
+    - blockchain/relay
+    # endoints: post_transaction mandatory
+    #   name: [method, path]
+    endpoints:
+        post_transactions: [POST, /api/transactions]
 ```

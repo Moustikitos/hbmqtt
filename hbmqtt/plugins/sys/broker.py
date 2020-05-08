@@ -207,11 +207,11 @@ class BlockchainRelayPlugin(BrokerBlockchainPlugin):
     async def on_broker_message_received(self, *args, **kwargs):
         message = kwargs["message"]
         topic = message.topic
+        if not self._is_relay_topic(topic):
+            return False
 
         try:
-            if not self._is_relay_topic(topic):
-                return False
-            elif "post_transactions" in self.endpoints:
+            if "post_transactions" in self.endpoints:
                 data = json.loads(message.data)
                 resp = await self.bc_request(
                     "post_transactions", {
@@ -223,15 +223,18 @@ class BlockchainRelayPlugin(BrokerBlockchainPlugin):
                 resp = {"status": 404, "error": "endpoint not defined"}
         except Exception as error:
             msg = "%r\n%s", error, traceback.format_exc()
-            self.context.logger.error(msg)
             resp = {"status": 500, "error": msg}
+            self.context.logger.error(msg)
 
-        self.context.logger.debug(">>> blockchain response : %r", resp)
+        self.context.logger.debug("blockchain response : %r", resp)
         # create a message to send to topic
-        broker_url = "mqtt://127.0.0.1:%s" % self.broker_port
-        topic = "resp/"+ topic #self._blockchain.get('response-topic', 'blockchain/response')
         self.context.logger.info(
-            await publish(broker_url, topic, json.dumps(resp), qos=0x02)
+            await publish(
+                "mqtt://127.0.0.1:%s" % self.broker_port,
+                "resp/" + topic,
+                json.dumps(resp),
+                qos=0x02
+            )
         )
 
 

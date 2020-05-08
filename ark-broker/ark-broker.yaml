@@ -3,6 +3,7 @@ auth:
   restricted-puk: false
   plugins:
   - auth_secp256k1
+  - auth_anonymous
   - broker_bc
   - bc_relay
 listeners:
@@ -17,7 +18,6 @@ topic-check:
   enabled: true
   secp256k1-roots:
   - ark/
-  - blockchain/
   plugins:
   - topic_taboo
   - topic_secp256k1
@@ -28,7 +28,7 @@ broker-blockchain:
   relay-topics:
   - ark/relay
   bridged-topics:
-    blockchain/event: [null, dummy]
+    ark/event: [null, dummy]
   endpoints:
     configuration: [GET, /api/node/configuration]
     post_transactions: [POST, /api/transactions]

@@ -99,7 +99,12 @@ topic-check:
 
 ### Use
 
-To subscripe and publish with `secp256k1` genuine connection, use `--ecdsa` or `--schnorr` option available with `hbmqtt_pub` and `hbmqtt_sub` commands.
+To subscribe and publish with `secp256k1` genuine connection, use `--ecdsa` or `--schnorr` option available with `hbmqtt_pub` and `hbmqtt_sub` commands.
+
+```bash
+$ hbmqtt_pub --help
+$ hbmqtt_sub --help
+```
 
 ## Bridge concept
 

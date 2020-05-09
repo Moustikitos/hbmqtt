@@ -68,7 +68,7 @@ hbmqtt -c full\path\to\ark-broker.yaml
 
 ## `secp256k1` connection
 
-Asymetric encryption provides an easy way to trust data verifying ownership. Because MQTT protocol is designed to be simple and efficient, best way to secure IOT broker connections with any device is to be guaranted of device genuinity. Once genuinity ensured, topic can be restricted.
+Asymetric encryption provides an easy way to trust data with ownership verification. Because MQTT protocol is designed to be simple and efficient, best way to secure IOT broker connections with any device is to be guaranted of device genuinity.
 
 ### Configuration
 

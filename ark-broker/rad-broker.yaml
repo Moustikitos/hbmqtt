@@ -1,9 +1,11 @@
 auth:
-  allow-anonymous: false
+  allow-anonymous: true
   restricted-puk: false
   plugins:
   - auth_secp256k1
+  - auth_anonymous
   - broker_bc
+  - bc_relay
 listeners:
   default:
     bind: 0.0.0.0:1883
@@ -15,8 +17,6 @@ listeners:
 topic-check:
   enabled: true
   secp256k1-roots:
-  - ark/
-  - rad/
   - blockchain/
   plugins:
   - topic_taboo
@@ -25,12 +25,10 @@ broker-blockchain:
   nethash: f39a61f04d6136a690a0b675ef6eedbd053665bd343b4e4f03311f12065fb875
   peers:
   - https://radians.nl
-  topics:
-  - blockchain/event
-  python-bindings:
-    # topic: [module=None, function]
-    # if module == None: get function from plugin instance
-    # else if module loaded on plugin initialization, use module.function
-    blockchain/event: [null, test]
+  relay-topics:
+  - blockchain/relay
+  bridged-topics:
+    blockchain/bridge: [null, dummy]
   endpoints:
     configuration: [GET, /api/node/configuration]
+    post_transactions: [POST, /api/transactions]

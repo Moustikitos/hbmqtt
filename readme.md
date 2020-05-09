@@ -66,6 +66,41 @@ Download `yaml` [configuration file](https://raw.githubusercontent.com/Moustikit
 hbmqtt -c full\path\to\ark-broker.yaml
 ```
 
+## `secp256k1` connection
+
+Asymetric encryption provides an easy way to trust data verifying ownership. Because MQTT protocol is designed to be simple and efficient, best way to secure IOT broker connections with any device is to be guaranted of device genuinity. Once genuinity ensured, topic can be restricted.
+
+### Configuration
+
+Genuine connection is set with `yaml` configuration:
+
+```yaml
+auth:
+    plugins:
+    # auth_secp256k1: mandatory plugin to activate genuine check
+    - auth_secp256k1
+    # restricted-puk: not mandatory (default: false)
+    # only public keys found in 'puk-file' are allowed to connect on secp256k1
+    # reserved topics.
+    restricted-puk: true
+    # puk-file: not mandatory, used to restrict access.
+    # file line format:
+    #     secp256k1.puk:<hex_string_encoded_public_key>
+    puk-file: full/path/to/puk.file
+...
+topic-check:
+    enabled: true
+    plugins:
+    - topic_secp256k1
+    secp256k1-roots:
+    - blockchain/
+...
+```
+
+### Use
+
+To subscripe and publish with `secp256k1` genuine connection, use `--ecdsa` or `--schnorr` option available with `hbmqtt_pub` and `hbmqtt_sub` commands.
+
 ## Bridge concept
 
 ### Listening
@@ -125,10 +160,9 @@ plg.endpoints
 await plg.bc_request(endpoint, data={}, **qs)
 ```
 
-
 ### Relaying
 
-[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc2luZ1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc2luZ1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
+[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
 
 Relaying is set with `yaml` configuration:
 
@@ -143,7 +177,7 @@ auth:
     allow-anonymous: true
 ...
 broker-blockchain:
-    # nethash: not mandatory if only GET requests are sent by broker
+    # nethash: mandatory for HTTP POST requests
     nethash: 6e84d08bd299ed97c212c886c98a57e36545c8f5d645ca7eeae63a8bd62d8988
     # peers: mandatory, at least one valid peer is needed
     peers:
@@ -151,7 +185,7 @@ broker-blockchain:
     # relay-topics: mandatory
     relay-topics:
     - blockchain/relay
-    # endoints: post_transaction mandatory
+    # endoints: post_transactions mandatory
     #   name: [method, path]
     endpoints:
         post_transactions: [POST, /api/transactions]

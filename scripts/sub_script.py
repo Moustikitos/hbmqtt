@@ -19,8 +19,8 @@ Options:
     -q | --qos QOS      Quality of service desired to receive messages, from 0, 1 and 2. Defaults to 0.
     -t TOPIC...         Topic filter to subcribe
     -k KEEP_ALIVE       Keep alive timeout in second
-    --schnorr SECRET    secret to use for a secp256k1 secured connection
-    --ecdsa SECRET      secret to use for an ecdsa secured connection
+    --schnorr SECRET    secret or file to use for a secp256k1 secured connection
+    --ecdsa SECRET      secret or file to use for an ecdsa secured connection
     --clean-session     Clean session on connect (defaults to False)
     --ca-file CAFILE]   CA file
     --ca-path CAPATH]   CA Path

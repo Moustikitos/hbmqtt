@@ -22,8 +22,8 @@ Options:
     -f FILE             Read file by line and publish message for each line
     -s                  Read from stdin and publish message for each line
     -k KEEP_ALIVE       Keep alive timeout in second
-    --schnorr SECRET    secret to use for a schnorr secured connection
-    --ecdsa SECRET      secret to use for an ecdsa secured connection
+    --schnorr SECRET    secret or file to use for a schnorr secured connection
+    --ecdsa SECRET      secret or file to use for an ecdsa secured connection
     --clean-session     Clean session on connect (defaults to False)
     --ca-file CAFILE]   CA file
     --ca-path CAPATH]   CA Path

@@ -1,7 +1,6 @@
 # Copyright (c) 2015 Nicolas JOUANIN
 #
 # See the file license.txt for copying permission.
-import sys
 import logging
 import asyncio
 import binascii
@@ -97,7 +96,7 @@ class FileAuthPlugin(BaseAuthPlugin):
         return authenticated
 
 
-class Secp256k1AuthPlugin(BaseAuthPlugin):
+class EcdsaAuthPlugin(BaseAuthPlugin):
     """
     This plugin allows secure identification without ssl.
     """
@@ -153,42 +152,47 @@ class Secp256k1AuthPlugin(BaseAuthPlugin):
                     secp256k1 = \
                         schnorr if len(session.password) == 128 else \
                         ecdsa
+                    sig = binascii.unhexlify(session.password)
+                    # Schnorr protocol only uses x value of a secp256k1 point.
+                    # puk[-64:] gives hexlified x value from encoded secp256k1
+                    # point
+                    puk = binascii.unhexlify(
+                        puk[-64:] if secp256k1 is schnorr else puk
+                    )
+
                     # time is used to change signature identification every
                     # 10 seconds. Test is performed on the curent 10s utc and
                     # the one before. Isoformat is YYYY-MM-DDTHH:MM:SS.ffffff
                     # so isoformat()[:18] --> YYYY-MM-DDTHH:MM:S
-                    now = datetime.datetime.utcnow()
-                    iso_now = now.isoformat()[:18]
-                    iso_now_m1 = (
-                        now - datetime.timedelta(1.0 / 8640)  # 86400=24*60*60
-                    ).isoformat()[:18]
                     # ecdsa signature is issued on :
-                    # isoformat(utcnow)[:16] + client id
-                    msg = secp256k1.hash_sha256(iso_now + session.client_id)
-                    msg_m1 = secp256k1.hash_sha256(
-                        iso_now_m1 + session.client_id
+                    # isoformat(utcnow)[:18] + client id
+                    now = datetime.datetime.utcnow()
+
+                    iso_now = now.isoformat()[:18]
+                    msg = secp256k1.hash_sha256(
+                        iso_now + session.client_id
                     )
-                    # Schnorr protocol only uses x value of a secp256k1 point.
-                    # puk[-64:] gives hexlified x value from encoded secp256k1
-                    # point
                     try:
-                        puk = binascii.unhexlify(
-                            puk[-64:] if secp256k1 is schnorr else puk
+                        authenticated = secp256k1.verify(msg, puk, sig)
+                    except Exception:
+                        iso_now_m1 = (
+                            now - datetime.timedelta(1.0 / 8640)  # 86400=24*60*60
+                        ).isoformat()[:18]
+                        msg_m1 = secp256k1.hash_sha256(
+                            iso_now_m1 + session.client_id
                         )
-                        sig = binascii.unhexlify(session.password)
-                        authenticated = any([
-                            secp256k1.verify(msg, puk, sig),
-                            secp256k1.verify(msg_m1, puk, sig)
-                        ])
-                        setattr(session, "_secp256k1", authenticated)
-                    except Exception as error:
-                        self.context.logger.error(
-                            "%r\n%s", error, traceback.format_exc()
-                        )
-                        self.context.logger.debug(
-                            "secp256k1 auth error %s", session
-                        )
-                        return None if allow_anonymous else False
+                        try:
+                            authenticated = secp256k1.verify(msg_m1, puk, sig)
+                        except Exception as error:
+                            self.context.logger.error(
+                                "%r\n%s", error, traceback.format_exc()
+                            )
+                            self.context.logger.debug(
+                                "ecdsa auth error %s", session
+                            )
+                            return None if allow_anonymous else False
+
+                    setattr(session, "_secp256k1", authenticated)
             else:
                 return None
         return authenticated

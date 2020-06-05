@@ -4,7 +4,6 @@
 from datetime import datetime
 from hbmqtt.mqtt.packet import PUBLISH
 from hbmqtt.codecs import int_to_bytes_str
-from hbmqtt.client import MQTTClient, ConnectException
 
 import ssl
 import sys
@@ -16,6 +15,7 @@ import importlib
 import urllib.parse as urlparse
 from collections import deque
 from urllib.request import Request, urlopen
+from hbmqtt.client import MQTTClient, ConnectException
 
 
 DOLLAR_SYS_ROOT = '$SYS/broker/'
@@ -29,6 +29,20 @@ STAT_START_TIME = 'start_time'
 STAT_CLIENTS_MAXIMUM = 'clients_maximum'
 STAT_CLIENTS_CONNECTED = 'clients_connected'
 STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
+
+
+# async def psql(sql):
+#     cmd = shlex.split('psql -qtAX -d ark_mainnet -c "%s"' % sql)
+#     proc = await asyncio.create_subprocess_shell(
+#         cmd,
+#         stdout=asyncio.subprocess.PIPE,
+#         stderr=asyncio.subprocess.PIPE
+#     )
+#     stdout, stderr = await proc.communicate()
+#     if proc.returncode == 0:
+#         return stdout.decode().strip()
+#     else:
+#         return None
 
 
 async def publish(broker, topic, message, qos=1):
@@ -78,9 +92,9 @@ class BrokerBlockchainPlugin:
                     self._blockchain['bridged-topics'].pop(t)
 
     # send http request to blockchain
-    async def bc_request(self, endpoint, data={}, **qs):
-        method, path = self._endpoints.get(endpoint, ["GET", endpoint])
-        if method not in ["GET"]:
+    async def bc_request(self, endpoint, method="GET", data={}, **qs):
+        method, path = self._endpoints.get(endpoint, [method, endpoint])
+        if method in ["POST", "PUT"]:
             if isinstance(data, (dict, list, tuple)):
                 data = json.dumps(data).encode('utf-8')
             elif isinstance(data, str):
@@ -183,59 +197,80 @@ class BrokerBlockchainPlugin:
                 func.__name__, data
             )
             return func(self, data)
+        else:
+            return None
 
     @staticmethod
     def dummy(cls, data):
         cls.context.logger.info("dummy function says: %s", data)
+        return True
 
 
-class BlockchainRelayPlugin(BrokerBlockchainPlugin):
+class BlockchainApiPlugin(BrokerBlockchainPlugin):
 
     def __init__(self, context):
         BrokerBlockchainPlugin.__init__(self, context)
-        self.broker_port = self.context.config.get("listeners", {}).get(
-            "defaults", "127.0.0.1:1884"
-        ).split(":")[-1]
-
-    def _is_relay_topic(self, topic):
-        return any([
-            topic.startswith(t) for t in self._blockchain.get(
-                'relay-topics', []
-            )
-        ])
+        self.broker_port = self.context.config.get("listeners", {})\
+            .get("default", {})\
+            .get("bind", "127.0.0.1:1884")\
+            .split(":")[-1]
 
     async def on_broker_message_received(self, *args, **kwargs):
         message = kwargs["message"]
-        topic = message.topic
-        if not self._is_relay_topic(topic):
+        topic = message.topic.split("/")
+
+        method = topic[0]
+        if method not in ["&GET", "&POST", "&PUT", "&DELETE"]:
+            self.context.logger.debug("api plugin not triggered")
             return False
 
+        method = method[1:]
+        path = "/".join(topic[1:])
+
         try:
-            if "post_transactions" in self.endpoints:
-                data = json.loads(message.data)
-                resp = await self.bc_request(
-                    "post_transactions", {
-                        "transactions":
-                            [data] if not isinstance(data, list) else data
-                    }
-                )
+            if method in ["POST", "PUT", "DELETE"]:
+                resp = await self.bc_request(path, method, message.data)
             else:
-                resp = {"status": 404, "error": "endpoint not defined"}
+                try: data = json.loads(message.data)
+                except: data = {}
+                data = data if data is not None else {} 
+                print(">>>>>>>>>", data)
+                resp = await self.bc_request(path, method, {}, **data)
         except Exception as error:
             msg = "%r\n%s", error, traceback.format_exc()
             resp = {"status": 500, "error": msg}
             self.context.logger.error(msg)
+            return None
 
-        self.context.logger.debug("blockchain response : %r", resp)
         # create a message to send to topic
         self.context.logger.info(
             await publish(
                 "mqtt://127.0.0.1:%s" % self.broker_port,
-                "resp/" + topic,
+                "&RESP/" + kwargs.get('client_id'),
                 json.dumps(resp),
                 qos=0x02
             )
         )
+        return True
+
+
+# class BlockchainRelayPlugin(BlockchainApiPlugin):
+
+#     def _is_relay_topic(self, topic):
+#         return any([
+#             topic.startswith(t) for t in self._blockchain.get(
+#                 'relay-topics', []
+#             )
+#         ])
+
+#     async def on_broker_message_received(self, *args, **kwargs):
+#         if not self._is_relay_topic(kwargs["message"].topic):
+#             return False
+#         else:
+#             kwargs["message"].topic = "&POST/api/transactions"
+#             return await BlockchainApiPlugin.on_broker_message_received(
+#                 self, *args, **kwargs
+#             )
 
 
 class BrokerSysPlugin:

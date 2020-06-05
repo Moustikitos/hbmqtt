@@ -37,7 +37,7 @@ class TopicTabooPlugin(BaseTopicPlugin):
         return filter_result
 
 
-class Secp256k1TopicPlugin(BaseTopicPlugin):
+class EcdsaTopicPlugin(BaseTopicPlugin):
     def __init__(self, context):
         super().__init__(context)
 
@@ -48,14 +48,14 @@ class Secp256k1TopicPlugin(BaseTopicPlugin):
             session = kwargs.get('session', None)
             topic = kwargs.get('topic', None)
             self.context.logger.info(
-                "secp256k1 topic filter on %s with %s session\n%s",
-                self.topic_config.get("secp256k1-roots", []),
+                "ecdsa topic filter on %s with %s session\n%s",
+                self.topic_config.get("ecdsa-roots", []),
                 "granted" if getattr(session, "_secp256k1", False) else "not granted",
                 session
             )
             if any([
                 topic.startswith(root) for root in
-                self.topic_config.get("secp256k1-roots", [])
+                self.topic_config.get("ecdsa-roots", [])
             ]):
                 return True if getattr(session, "_secp256k1", False) else False
             else:

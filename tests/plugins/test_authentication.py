@@ -10,7 +10,7 @@ import datetime
 import binascii
 from hbmqtt.plugins.secp256k1 import schnorr, ecdsa
 from hbmqtt.plugins.manager import BaseContext
-from hbmqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin, Secp256k1AuthPlugin
+from hbmqtt.plugins.authentication import AnonymousAuthPlugin, FileAuthPlugin, EcdsaAuthPlugin
 from hbmqtt.session import Session
 
 formatter = "[%(asctime)s] %(name)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
@@ -114,7 +114,7 @@ class TestFileAuthPlugin(unittest.TestCase):
         self.assertFalse(ret)
 
 
-class TestSecp256k1AuthPlugin(unittest.TestCase):
+class TestEcdsaAuthPlugin(unittest.TestCase):
     def setUp(self):
         self.loop = asyncio.new_event_loop()
 
@@ -138,7 +138,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         msg = ecdsa.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id)
         s.password = binascii.hexlify(ecdsa.sign(msg, prk))
 
-        auth_plugin = Secp256k1AuthPlugin(context)
+        auth_plugin = EcdsaAuthPlugin(context)
         ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
         self.assertTrue(ret)
 
@@ -162,7 +162,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id)
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
-        auth_plugin = Secp256k1AuthPlugin(context)
+        auth_plugin = EcdsaAuthPlugin(context)
         ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
         self.assertTrue(ret)
 
@@ -186,7 +186,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id[1:])  # remove first char of client_id to generate a bad signature
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
-        auth_plugin = Secp256k1AuthPlugin(context)
+        auth_plugin = EcdsaAuthPlugin(context)
         ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
         self.assertFalse(ret)
 
@@ -210,7 +210,7 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id[1:])  # remove first char of client_id to generate a bad signature
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
-        auth_plugin = Secp256k1AuthPlugin(context)
+        auth_plugin = EcdsaAuthPlugin(context)
         ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
         self.assertFalse(ret)
 
@@ -234,6 +234,6 @@ class TestSecp256k1AuthPlugin(unittest.TestCase):
         msg = schnorr.hash_sha256(datetime.datetime.utcnow().isoformat()[:18] + s.client_id[1:])
         s.password = binascii.hexlify(schnorr.sign(msg, prk))
 
-        auth_plugin = Secp256k1AuthPlugin(context)
+        auth_plugin = EcdsaAuthPlugin(context)
         ret = self.loop.run_until_complete(auth_plugin.authenticate(session=s))
         self.assertFalse(ret)

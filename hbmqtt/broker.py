@@ -5,7 +5,6 @@ import logging
 import ssl
 import websockets
 import asyncio
-import sys
 import re
 from asyncio import CancelledError
 from collections import deque
@@ -734,9 +733,7 @@ class Broker:
 
     @asyncio.coroutine
     def _broadcast_message_acl(self, session, topic, data, force_qos=None):
-        permitted = yield from self.topic_filtering(session, topic=topic)
-        
-        if permitted:
+        if (yield from self.topic_filtering(session, topic=topic)):
             yield from self._broadcast_message(session, topic, data, force_qos)
 
     @asyncio.coroutine

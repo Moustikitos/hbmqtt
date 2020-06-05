@@ -77,8 +77,8 @@ Genuine connection is set with `yaml` configuration:
 ```yaml
 auth:
     plugins:
-    # auth_secp256k1: mandatory plugin to activate genuine check
-    - auth_secp256k1
+    # auth_ecdsa: mandatory plugin to activate genuine check
+    - auth_ecdsa
     # restricted-puk: not mandatory (default: false)
     # only public keys found in 'puk-file' are allowed to connect on secp256k1
     # reserved topics.
@@ -89,10 +89,13 @@ auth:
     puk-file: full/path/to/puk.file
 ...
 topic-check:
+    # enable: mandatory to activate subscrition
     enabled: true
     plugins:
-    - topic_secp256k1
-    secp256k1-roots:
+    # topic_ecdsa : mandatory plugin to activate subscription restrictions
+    - topic_ecdsa
+    ecdsa-roots:
+    # ecdsa-roots: restricted topics to genuine subscribers
     - blockchain/
 ...
 ```
@@ -133,10 +136,6 @@ broker-blockchain:
     #   else if module loaded on plugin initialization: use module.function
     bridged-topics:
         blockchain/event: [null, dummy]
-    # endoints: not mandatory
-    #   name: [method, path]
-    endpoints:
-        configuration: [GET, /api/node/configuration]
 ```
 
 Bridged topics are listed in `bridged-topics` field of the `yaml` config. They are stored in an hbmqtt plugin as python dictionary, topic as keys, module-function pair as value. Modules are imported on plugin initialization as the broker starts. if a module is not found, `ImportError` exception is ignored and associated topic is removed.
@@ -165,18 +164,17 @@ plg.endpoints
 await plg.bc_request(endpoint, data={}, **qs)
 ```
 
-### Relaying
+### API interface
 
-[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogdHJhbnNhY3Rpb25cbiAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgdHJhbnNhY3Rpb24gdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBhbHQgcmVsYXktdG9waWMgdXNlZFxuICAgICAgICBCcm9rZXItPj5CbG9ja2NoYWluOiB0cmFuc2FjdGlvblxuICAgICAgICBCbG9ja2NoYWluLT4-QmxvY2tjaGFpbjogaW5uZXIgcHJvY2Vzc1xuICAgICAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgICAgICBCcm9rZXItPj5Ccm9rZXI6IGZvcndhcmQgcmVzcG9uc2UgdG8gc3Vic2NyaWJlcnMgKGlmIGFueSlcbiAgICBlbmRcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
-
+[![](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogc2VuZCBEQVRBIHRvICZNRVRIT0QvYXBpL2VuZHBvaW50IHRvcGljXG4gICAgQnJva2VyLT4-QmxvY2tjaGFpbjogSFRUUFtNRVRIT0QgYXBpL2VuZHBvaW50IERBVEFdXG4gICAgQmxvY2tjaGFpbi0-PkJsb2NrY2hhaW46IGlubmVyIHByb2Nlc3NcbiAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgIEJyb2tlci0-PklPVDogZm9yd2FyZCByZXNwb25zZSB0byAmUkVTUC9jbGllbnRfaWQgdG9waWNcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5QYXJ0aWNpcGFudCBJT1QgYXMgSU9UIGRldmljZVxuICAgIElPVC0-PkJyb2tlcjogc2VuZCBEQVRBIHRvICZNRVRIT0QvYXBpL2VuZHBvaW50IHRvcGljXG4gICAgQnJva2VyLT4-QmxvY2tjaGFpbjogSFRUUFtNRVRIT0QgYXBpL2VuZHBvaW50IERBVEFdXG4gICAgQmxvY2tjaGFpbi0-PkJsb2NrY2hhaW46IGlubmVyIHByb2Nlc3NcbiAgICBCbG9ja2NoYWluLT4-QnJva2VyOiByZXNwb25zZVxuICAgIEJyb2tlci0-PklPVDogZm9yd2FyZCByZXNwb25zZSB0byAmUkVTUC9jbGllbnRfaWQgdG9waWNcbiIsIm1lcm1haWQiOnsidGhlbWUiOiJmb3Jlc3QifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
 Relaying is set with `yaml` configuration:
 
 ```yaml
 auth:
     ...
     plugins:
-    # bc_relay: mandatory plugin to activate the bridge
-    - bc_relay
+    # bc_api: mandatory plugin to activate the api
+    - bc_api
     # auth_anonymous : mandatory for blockchain response
     - auth_anonymous
     allow-anonymous: true
@@ -187,11 +185,4 @@ broker-blockchain:
     # peers: mandatory, at least one valid peer is needed
     peers:
     - https://explorer.ark.io:8443
-    # relay-topics: mandatory
-    relay-topics:
-    - blockchain/relay
-    # endoints: post_transactions mandatory
-    #   name: [method, path]
-    endpoints:
-        post_transactions: [POST, /api/transactions]
 ```

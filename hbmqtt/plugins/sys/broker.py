@@ -8,6 +8,7 @@ from hbmqtt.codecs import int_to_bytes_str
 import ssl
 import sys
 import json
+import shlex
 import random
 import asyncio
 import traceback
@@ -231,10 +232,10 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
             if method in ["POST", "PUT", "DELETE"]:
                 resp = await self.bc_request(path, method, message.data)
             else:
-                try: data = json.loads(message.data)
-                except: data = {}
-                data = data if data is not None else {} 
-                print(">>>>>>>>>", data)
+                try:
+                    data = json.loads(message.data)
+                except Exception:
+                    data = {}
                 resp = await self.bc_request(path, method, {}, **data)
         except Exception as error:
             msg = "%r\n%s", error, traceback.format_exc()

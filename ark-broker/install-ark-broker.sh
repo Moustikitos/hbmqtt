@@ -59,7 +59,7 @@ echo
 echo configuring service
 echo ===================
 
-wget -q -O -P $HOME/.config $YAML
+wget -q -O $HOME/.config/ark-broker.yaml $YAML
 
 cat > $HOME/ark-broker.service << EOF
 [Unit]

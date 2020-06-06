@@ -8,7 +8,7 @@ from hbmqtt.codecs import int_to_bytes_str
 import ssl
 import sys
 import json
-import shlex
+# import shlex
 import random
 import asyncio
 import traceback
@@ -46,19 +46,19 @@ STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
 #         return None
 
 
-async def publish(broker, topic, message, qos=1):
-    message = \
-        message if isinstance(message, bytes) else \
-        message.encode("utf-8")
-    try:
-        client = MQTTClient()
-        await client.connect(broker)
-        await client.publish(topic, message, qos=qos)
-        await client.disconnect()
-    except ConnectException as ce:
-        return "%r\n%s" % (ce, traceback.format_exc(ce))
-    else:
-        return "blockchain response relayed : %r" % message
+# async def publish(broker, topic, message, qos=1):
+#     message = \
+#         message if isinstance(message, bytes) else \
+#         message.encode("utf-8")
+#     try:
+#         client = MQTTClient()
+#         await client.connect(broker)
+#         await client.publish(topic, message, qos=qos)
+#         await client.disconnect()
+#     except ConnectException as ce:
+#         return "%r\n%s" % (ce, traceback.format_exc(ce))
+#     else:
+#         return "blockchain response relayed : %r" % message
 
 
 class BrokerBlockchainPlugin:
@@ -243,35 +243,22 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
             self.context.logger.error(msg)
             return None
 
-        # create a message to send to topic
-        self.context.logger.info(
-            await publish(
-                "mqtt://127.0.0.1:%s" % self.broker_port,
-                "&RESP/" + kwargs.get('client_id'),
-                json.dumps(resp),
-                qos=0x02
+        # Broadcast updates
+        tasks = deque()
+        tasks.append(
+            asyncio.ensure_future(
+                self.context.broadcast_message(
+                    "&RESP/" + kwargs.get('client_id'),
+                    json.dumps(resp).encode("utf-8")
+                ),
+                loop=self.context.loop
             )
         )
+        # Wait until broadcasting tasks end
+        while tasks and tasks[0].done():
+            tasks.popleft()
+
         return True
-
-
-# class BlockchainRelayPlugin(BlockchainApiPlugin):
-
-#     def _is_relay_topic(self, topic):
-#         return any([
-#             topic.startswith(t) for t in self._blockchain.get(
-#                 'relay-topics', []
-#             )
-#         ])
-
-#     async def on_broker_message_received(self, *args, **kwargs):
-#         if not self._is_relay_topic(kwargs["message"].topic):
-#             return False
-#         else:
-#             kwargs["message"].topic = "&POST/api/transactions"
-#             return await BlockchainApiPlugin.on_broker_message_received(
-#                 self, *args, **kwargs
-#             )
 
 
 class BrokerSysPlugin:

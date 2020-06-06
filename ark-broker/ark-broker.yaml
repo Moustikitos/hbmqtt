@@ -5,7 +5,6 @@ auth:
   - auth_ecdsa
   - auth_anonymous
   - broker_bc
-  - bc_relay
   - bc_api
 listeners:
   default:
@@ -26,8 +25,6 @@ broker-blockchain:
   nethash: 6e84d08bd299ed97c212c886c98a57e36545c8f5d645ca7eeae63a8bd62d8988
   peers:
   - https://explorer.ark.io:8443
-  relay-topics:
-  - blockchain/relay
   bridged-topics:
     blockchain/bridge: [null, dummy]
   endpoints:

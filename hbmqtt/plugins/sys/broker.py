@@ -16,7 +16,6 @@ import importlib
 import urllib.parse as urlparse
 from collections import deque
 from urllib.request import Request, urlopen
-from hbmqtt.client import MQTTClient, ConnectException
 
 
 DOLLAR_SYS_ROOT = '$SYS/broker/'
@@ -44,21 +43,6 @@ STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
 #         return stdout.decode().strip()
 #     else:
 #         return None
-
-
-# async def publish(broker, topic, message, qos=1):
-#     message = \
-#         message if isinstance(message, bytes) else \
-#         message.encode("utf-8")
-#     try:
-#         client = MQTTClient()
-#         await client.connect(broker)
-#         await client.publish(topic, message, qos=qos)
-#         await client.disconnect()
-#     except ConnectException as ce:
-#         return "%r\n%s" % (ce, traceback.format_exc(ce))
-#     else:
-#         return "blockchain response relayed : %r" % message
 
 
 class BrokerBlockchainPlugin:

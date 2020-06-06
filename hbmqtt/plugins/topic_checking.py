@@ -47,12 +47,6 @@ class EcdsaTopicPlugin(BaseTopicPlugin):
         if filter_result:
             session = kwargs.get('session', None)
             topic = kwargs.get('topic', None)
-            self.context.logger.info(
-                "ecdsa topic filter on %s with %s session\n%s",
-                self.topic_config.get("ecdsa-roots", []),
-                "granted" if getattr(session, "_secp256k1", False) else "not granted",
-                session
-            )
             if any([
                 topic.startswith(root) for root in
                 self.topic_config.get("ecdsa-roots", [])

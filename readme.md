@@ -136,6 +136,11 @@ broker-blockchain:
     #   else if module loaded on plugin initialization: use module.function
     bridged-topics:
         blockchain/event: [null, dummy]
+    # endoints: not mandatory
+    #   name: [method, path]
+    endpoints:
+        configuration: [GET, /api/node/configuration]
+        post_transactions: [POST, /api/transactions]
 ```
 
 Bridged topics are listed in `bridged-topics` field of the `yaml` config. They are stored in an hbmqtt plugin as python dictionary, topic as keys, module-function pair as value. Modules are imported on plugin initialization as the broker starts. if a module is not found, `ImportError` exception is ignored and associated topic is removed.

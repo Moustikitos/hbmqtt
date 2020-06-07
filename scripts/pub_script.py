@@ -145,7 +145,6 @@ def main(*args, **kwargs):
         sys.exit(-1)
 
     arguments = docopt(__doc__, version=get_version())
-    #print(arguments)
     formatter = "[%(asctime)s] :: %(levelname)s - %(message)s"
 
     if arguments['-d']:
@@ -177,6 +176,7 @@ def main(*args, **kwargs):
         config['will']['retain'] = arguments['--will-retain']
 
     if arguments['--schnorr'] or arguments['--ecdsa']:
+        arguments['--clean-session'] = True
         msg = schnorr.hash_sha256(
             datetime.datetime.utcnow().isoformat()[:18] + client_id
         )

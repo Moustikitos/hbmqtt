@@ -158,6 +158,7 @@ def main(*args, **kwargs):
         config['will']['retain'] = arguments['--will-retain']
 
     if arguments['--schnorr'] or arguments['--ecdsa']:
+        arguments['--clean-session'] = True
         msg = schnorr.hash_sha256(
             datetime.datetime.utcnow().isoformat()[:18] + client_id
         )

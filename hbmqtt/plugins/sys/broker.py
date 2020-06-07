@@ -8,12 +8,12 @@ from hbmqtt.codecs import int_to_bytes_str
 import ssl
 import sys
 import json
-# import shlex
 import random
 import asyncio
 import traceback
 import importlib
 import urllib.parse as urlparse
+
 from collections import deque
 from urllib.request import Request, urlopen
 
@@ -29,20 +29,6 @@ STAT_START_TIME = 'start_time'
 STAT_CLIENTS_MAXIMUM = 'clients_maximum'
 STAT_CLIENTS_CONNECTED = 'clients_connected'
 STAT_CLIENTS_DISCONNECTED = 'clients_disconnected'
-
-
-# async def psql(sql):
-#     cmd = shlex.split('psql -qtAX -d ark_mainnet -c "%s"' % sql)
-#     proc = await asyncio.create_subprocess_shell(
-#         cmd,
-#         stdout=asyncio.subprocess.PIPE,
-#         stderr=asyncio.subprocess.PIPE
-#     )
-#     stdout, stderr = await proc.communicate()
-#     if proc.returncode == 0:
-#         return stdout.decode().strip()
-#     else:
-#         return None
 
 
 class BrokerBlockchainPlugin:
@@ -112,7 +98,10 @@ class BrokerBlockchainPlugin:
                     urlopen(req, context=ctx, timeout=5).read()
                 )
             except Exception as error:
-                return {"status": 500, "error": "http request %s to %s failed" % (method, path)}
+                return {
+                    "status": 500,
+                    "error": "http request %s to %s failed" % (method, path)
+                }
                 self.context.logger.error(
                     "%r\n%s", error, traceback.format_exc()
                 )
@@ -193,12 +182,18 @@ class BrokerBlockchainPlugin:
 
 class BlockchainApiPlugin(BrokerBlockchainPlugin):
 
-    def __init__(self, context):
-        BrokerBlockchainPlugin.__init__(self, context)
-        self.broker_port = self.context.config.get("listeners", {})\
-            .get("default", {})\
-            .get("bind", "127.0.0.1:1884")\
-            .split(":")[-1]
+    def relay_blockchain_response(self, topic, data):
+        # Broadcast updates
+        tasks = deque()
+        tasks.append(
+            asyncio.ensure_future(
+                self.context.broadcast_message(topic, data),
+                loop=self.context.loop
+            )
+        )
+        # Wait until broadcasting tasks end
+        while tasks and tasks[0].done():
+            tasks.popleft()
 
     async def on_broker_message_received(self, *args, **kwargs):
         message = kwargs["message"]
@@ -227,20 +222,10 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
             self.context.logger.error(msg)
             return None
 
-        # Broadcast updates
-        tasks = deque()
-        tasks.append(
-            asyncio.ensure_future(
-                self.context.broadcast_message(
-                    "&RESP/" + kwargs.get('client_id'),
-                    json.dumps(resp).encode("utf-8")
-                ),
-                loop=self.context.loop
-            )
+        self.relay_blockchain_response(
+            "&RESP/" + kwargs.get('client_id'),
+            json.dumps(resp).encode("utf-8")
         )
-        # Wait until broadcasting tasks end
-        while tasks and tasks[0].done():
-            tasks.popleft()
 
         return True
 

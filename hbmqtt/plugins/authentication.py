@@ -5,7 +5,6 @@ import logging
 import asyncio
 import binascii
 import datetime
-import traceback
 
 from passlib.apps import custom_app_context as pwd_context
 from hbmqtt.plugins.secp256k1 import schnorr, ecdsa
@@ -172,27 +171,18 @@ class EcdsaAuthPlugin(BaseAuthPlugin):
                     msg = secp256k1.hash_sha256(
                         iso_now + session.client_id
                     )
-                    try:
-                        authenticated = secp256k1.verify(msg, puk, sig)
-                    except Exception:
+                    authenticated = secp256k1.verify(msg, puk, sig)
+                    if not authenticated:
                         iso_now_m1 = (
                             now - datetime.timedelta(1.0 / 8640)  # 86400=24*60*60
                         ).isoformat()[:18]
                         msg_m1 = secp256k1.hash_sha256(
                             iso_now_m1 + session.client_id
                         )
-                        try:
-                            authenticated = secp256k1.verify(msg_m1, puk, sig)
-                        except Exception as error:
-                            self.context.logger.error(
-                                "%r\n%s", error, traceback.format_exc()
-                            )
-                            self.context.logger.debug(
-                                "ecdsa auth error %s", session
-                            )
-                            return None if allow_anonymous else False
+                        authenticated = secp256k1.verify(msg_m1, puk, sig)
 
                     setattr(session, "_secp256k1", authenticated)
+                    return None if allow_anonymous else authenticated
             else:
                 return None
         return authenticated

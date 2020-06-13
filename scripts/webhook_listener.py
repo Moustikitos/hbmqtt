@@ -7,11 +7,30 @@ import subprocess
 import multiprocessing
 
 from uio import srv, loadJson, dumpJson
-
+from optparse import OptionParser
 
 HOME = os.path.normpath(os.environ.get("HOME", os.path.expanduser("~")))
-app = srv.MicroJsonApp(host="127.0.0.1", port=5000, loglevel=10)
+parser = OptionParser(
+    usage="usage: %prog [options]",
+    version="%prog 1.0"
+)
+parser.add_option(
+    "-p", "--port", action="store", dest="port", default=5000,
+    type="int",
+    help="port to use  [default: 5000]"
+)
+parser.add_option(
+    "-l", "--log-level", action="store", dest="loglevel", default=20,
+    type="int",
+    help="set log level from 1 to 50 [default: 20]"
+)
 
+(options, args) = parser.parse_args()
+app = srv.MicroJsonApp(
+    host="0.0.0.0",
+    port=options.port,
+    loglevel=options.loglevel
+)
 
 if "win" not in sys.platform:
 
@@ -37,7 +56,7 @@ if "win" not in sys.platform:
 
     def main():
         StandaloneApplication(app.__call__, {
-            'bind': '%s:%s' % ('127.0.0.1', '5000'),
+            'bind': '%s:%s' % ('0.0.0.0', options.port),
             'workers': (multiprocessing.cpu_count() * 2) + 1,
         }).run()
 

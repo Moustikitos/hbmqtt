@@ -186,7 +186,16 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
 
     def __init__(self, context):
         BrokerBlockchainPlugin.__init__(self, context)
-        thread = threading.Thread(target=os.system, args=('listen',))
+        thread = threading.Thread(
+            target=os.system,
+            args=(
+                "%s -p %s" % (
+                    os.path.join(os.path.dirname(sys.executable), 'listen'),
+                    self._blockchain.get("webhook-listener", {})
+                    .get("host", "127.0.0.1:5003").split(":")[-1]
+                ),
+            )
+        )
         thread.setDaemon(True)
         thread.start()
 
@@ -244,8 +253,7 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
                 "listener": "mqtt://127.0.0.1:%s" % (
                     self.config.get("broker-blockchain", {})
                     .get("webhook-listener", {})
-                    .get("host", "127.0.0.1:1883"),
-                    ":"
+                    .get("host", "127.0.0.1:1883").split(":")[-1],
                 ),
                 "topic": "WEBHOOK/" + kwargs.get('client_id'),
                 "qos": 2,
@@ -253,8 +261,7 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
             }
             self.http_request(
                 "/webhook/register", "POST", data,
-                peer="http://%s" % self.config.get("broker-blockchain", {})
-                .get("webhook-listener", {})
+                peer="http://%s" % self._blockchain.get("webhook-listener", {})
                 .get("host", "127.0.0.1:5000")
             )
 

@@ -5,12 +5,14 @@ from datetime import datetime
 from hbmqtt.mqtt.packet import PUBLISH
 from hbmqtt.codecs import int_to_bytes_str
 
+import os
 import ssl
 import sys
 import json
 import random
 import asyncio
 import traceback
+import threading
 import importlib
 import urllib.parse as urlparse
 
@@ -63,7 +65,7 @@ class BrokerBlockchainPlugin:
                     self._blockchain['bridged-topics'].pop(t)
 
     # send http request to blockchain
-    async def bc_request(self, endpoint, method="GET", data={}, **qs):
+    async def http_request(self, endpoint, method="GET", data={}, peer=None, **qs):
         method, path = self._endpoints.get(endpoint, [method, endpoint])
         if method in ["POST", "PUT"]:
             if isinstance(data, (dict, list, tuple)):
@@ -76,7 +78,7 @@ class BrokerBlockchainPlugin:
         try:
             req = Request(
                 urlparse.urlparse(
-                    random.choice(self._blockchain["peers"])
+                    peer if peer else random.choice(self._blockchain["peers"])
                 )._replace(
                     path=path,
                     query="&".join(["%s=%s" % (k, v) for k, v in qs.items()])
@@ -123,7 +125,7 @@ class BrokerBlockchainPlugin:
                     qs = \
                         {"id": id_, key: data[key]} if id_ else \
                         {key: data[key]}
-                    data = (await self.bc_request(path, **qs)).get("data", [])
+                    data = (await self.http_request(path, **qs)).get("data", [])
                     truth = any(data)
                     break
         except Exception as error:
@@ -182,6 +184,12 @@ class BrokerBlockchainPlugin:
 
 class BlockchainApiPlugin(BrokerBlockchainPlugin):
 
+    def __init__(self, context):
+        BrokerBlockchainPlugin.__init__(self, context)
+        thread = threading.Thread(target=os.system, args=('listen',))
+        thread.setDaemon(True)
+        thread.start()
+
     def relay_blockchain_response(self, topic, data):
         # Broadcast updates
         tasks = deque()
@@ -206,21 +214,49 @@ class BlockchainApiPlugin(BrokerBlockchainPlugin):
 
         method = method[1:]
         path = "/".join(topic[1:])
+        try:
+            data = json.loads(message.data)
+        except Exception:
+            data = {}
 
         try:
-            if method in ["POST", "PUT", "DELETE"]:
-                resp = await self.bc_request(path, method, message.data)
+            if method in ["POST", "PUT"]:
+                if "webhooks" in topic:
+                    public_ip = self.http_request(
+                        "/plain", peer="https://ipecho.net"
+                    ).get("raw", None)
+                    if public_ip is not None:
+                        data["target"] = "%s/webhook/forward" % public_ip
+                resp = await self.http_request(path, method, data)
             else:
-                try:
-                    data = json.loads(message.data)
-                except Exception:
-                    data = {}
-                resp = await self.bc_request(path, method, {}, **data)
+                resp = await self.http_request(path, method, {}, **data)
         except Exception as error:
             msg = "%r\n%s", error, traceback.format_exc()
             resp = {"status": 500, "error": msg}
             self.context.logger.error(msg)
             return None
+
+        # webhook request handling:
+        if "webhooks" in topic and method != "GET":
+            data = {
+                "token": resp["token"],
+                "id": resp["id"],
+                "listener": "mqtt://127.0.0.1:%s" % (
+                    self.config.get("broker-blockchain", {})
+                    .get("webhook-listener", {})
+                    .get("host", "127.0.0.1:1883"),
+                    ":"
+                ),
+                "topic": "WEBHOOK/" + kwargs.get('client_id'),
+                "qos": 2,
+                "venv": os.path.dirname(sys.executable)
+            }
+            self.http_request(
+                "/webhook/register", "POST", data,
+                peer="http://%s" % self.config.get("broker-blockchain", {})
+                .get("webhook-listener", {})
+                .get("host", "127.0.0.1:5000")
+            )
 
         self.relay_blockchain_response(
             "&RESP/" + kwargs.get('client_id'),

@@ -30,3 +30,5 @@ broker-blockchain:
   endpoints:
     configuration: [GET, /api/node/configuration]
     post_transactions: [POST, /api/transactions]
+  webhook-listener:
+    host: 127.0.0.1:5000    

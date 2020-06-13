@@ -1,0 +1,8 @@
+future
+transitions
+websockets
+passlib
+docopt
+pyyaml
+gunicorn
+git+https://github.com/Moustikitos/micro-io

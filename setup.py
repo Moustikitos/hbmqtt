@@ -16,14 +16,6 @@ setup(
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     platforms='all',
-    install_requires=[
-        'future',
-        'transitions',
-        'websockets',
-        'passlib',
-        'docopt',
-        'pyyaml'
-    ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -60,6 +52,7 @@ setup(
             'packet_logger_plugin = hbmqtt.plugins.logging:PacketLoggerPlugin',
         ],
         'console_scripts': [
+            'listen = scripts.webhook_listener:main',
             'hbmqtt = scripts.broker_script:main',
             'hbmqtt_pub = scripts.pub_script:main',
             'hbmqtt_sub = scripts.sub_script:main',

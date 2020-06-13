@@ -2,6 +2,7 @@
 
 VENVDIR="$HOME/.local/share/ark-broker/venv"
 GITREPO="https://github.com/Moustikitos/hbmqtt.git"
+GITREQS="https://raw.githubusercontent.com/Moustikitos/hbmqtt/master/requirements.txt"
 YAML="https://raw.githubusercontent.com/Moustikitos/hbmqtt/master/ark-broker/ark-broker.yaml"
 
 clear
@@ -53,6 +54,7 @@ echo installing ark-broker
 echo =====================
 . $VENVDIR/bin/activate
 pip install git+$GITREPO --force
+pip install -r $GITREQS
 echo "done"
 
 echo

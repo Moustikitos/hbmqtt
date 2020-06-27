@@ -147,5 +147,14 @@ def delete_webhook(*args, **kwargs):
         os.remove(pathfile)
 
 
+@srv.bind("/webhooks", methods=["GET"])
+def get_webhook(*args, **kwargs):
+    return [
+        name.replace(".iot.wh", "") for name in os.listdir(
+            os.path.join(HOME, ".config")
+        ) if name.endswith(".iot.wh")
+    ]
+
+
 if __name__ == "__main__":
     main()

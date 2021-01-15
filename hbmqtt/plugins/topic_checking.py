@@ -53,7 +53,7 @@ class EcdsaTopicPlugin(BaseTopicPlugin):
             ]):
                 return True if getattr(session, "_secp256k1", False) else False
             else:
-                return True
+                return None
         return filter_result
 
 

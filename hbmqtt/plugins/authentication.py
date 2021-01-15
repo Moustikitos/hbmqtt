@@ -132,13 +132,16 @@ class EcdsaAuthPlugin(BaseAuthPlugin):
     async def authenticate(self, *args, **kwargs):
         authenticated = super().authenticate(*args, **kwargs)
         if authenticated:
-            allow_anonymous = self.auth_config.get('allow-anonymous', True)
+            allow_other_than_ecdsa = any([
+                self.auth_config.get('allow-anonymous', True),
+                self.auth_config.get('password-file', False)
+            ])
             allow_only_registered = self.auth_config.get(
                 'restricted-puk', False
             )
             session = kwargs.get('session', None)
             if session.username is None and (
-                allow_only_registered or not allow_anonymous
+                allow_only_registered or not allow_other_than_ecdsa
             ):
                 return False
             elif session.username:
@@ -182,7 +185,7 @@ class EcdsaAuthPlugin(BaseAuthPlugin):
                         authenticated = secp256k1.verify(msg_m1, puk, sig)
 
                     setattr(session, "_secp256k1", authenticated)
-                    return None if allow_anonymous else authenticated
+                    return None if allow_other_than_ecdsa else authenticated
             else:
                 return None
         return authenticated
